@@ -1,19 +1,96 @@
-type IconName = "library" | "search" | "feed" | "user" | "back" | "plus" | "check";
+type IconName =
+  | "library"
+  | "search"
+  | "feed"
+  | "user"
+  | "back"
+  | "plus"
+  | "check"
+  | "star"
+  | "book"
+  | "lock";
 
-const paths: Record<IconName, string> = {
-  library: "M4 4h4v16H4zM10 4h4v16h-4zM16 4h4v16h-4z",
-  search: "M10 4a6 6 0 104.47 10.03l4.75 4.75 1.42-1.42-4.75-4.75A6 6 0 0010 4zm0 2a4 4 0 110 8 4 4 0 010-8z",
-  feed: "M4 4h2v16H4zM9 4h11v2H9zM9 9h11v2H9zM9 14h11v2H9zM9 19h7v2H9z",
-  user: "M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.24-8 5v1h16v-1c0-2.76-3.6-5-8-5z",
-  back: "M15 4l-8 8 8 8 1.4-1.4L9.8 12l6.6-6.6z",
-  plus: "M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z",
-  check: "M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.4-1.4z",
-};
+export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.6,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
 
-export function Icon({ name, size = 22 }: { name: IconName; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d={paths[name]} />
-    </svg>
-  );
+  switch (name) {
+    case "library":
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="3.5" width="7" height="17" rx="1.5" />
+          <rect x="13.5" y="3.5" width="7" height="17" rx="1.5" />
+        </svg>
+      );
+    case "search":
+      return (
+        <svg {...common}>
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <line x1="19.5" y1="19.5" x2="15.2" y2="15.2" />
+        </svg>
+      );
+    case "feed":
+      return (
+        <svg {...common}>
+          <line x1="4" y1="6" x2="20" y2="6" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="4" y1="18" x2="14" y2="18" />
+        </svg>
+      );
+    case "user":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" />
+        </svg>
+      );
+    case "back":
+      return (
+        <svg {...common}>
+          <polyline points="15 4 7 12 15 20" />
+        </svg>
+      );
+    case "plus":
+      return (
+        <svg {...common}>
+          <line x1="12" y1="4" x2="12" y2="20" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+        </svg>
+      );
+    case "check":
+      return (
+        <svg {...common}>
+          <polyline points="4.5 12.5 9.5 17.5 19.5 6.5" />
+        </svg>
+      );
+    case "star":
+      return (
+        <svg {...{ ...common, fill: "currentColor", stroke: "none" }}>
+          <path d="M12 2.5l2.9 6.2 6.7.7-5 4.6 1.4 6.7L12 17.6 6 20.7l1.4-6.7-5-4.6 6.7-.7z" />
+        </svg>
+      );
+    case "book":
+      return (
+        <svg {...common}>
+          <path d="M5 4.5h9.5A2.5 2.5 0 0117 7v13H7.5A2.5 2.5 0 015 17.5v-13z" />
+          <line x1="5" y1="17.5" x2="17" y2="17.5" />
+        </svg>
+      );
+    case "lock":
+      return (
+        <svg {...common}>
+          <rect x="5" y="10.5" width="14" height="9.5" rx="1.5" />
+          <path d="M8 10.5V7.5a4 4 0 018 0v3" />
+        </svg>
+      );
+  }
 }

@@ -5,6 +5,8 @@ import {
   createIssue,
   fetchMyRating,
   fetchRatingSummary,
+  fetchSeriesReaderCount,
+  fetchSeriesReaders,
   getLibraryEntry,
   getProfile,
   getSeries,
@@ -21,6 +23,7 @@ import { LIBRARY_STATUS_LABELS } from "../types";
 import { Icon } from "./Icons";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
+import { Toast, useToast } from "./Toast";
 
 const STATUS_OPTIONS: LibraryStatus[] = ["plan_to_read", "reading", "completed", "dropped"];
 
@@ -44,16 +47,21 @@ export default function SeriesDetail({
   const [showRate, setShowRate] = useState(false);
   const [showAddIssue, setShowAddIssue] = useState(false);
   const [addedBy, setAddedBy] = useState<Profile | null>(null);
+  const [readers, setReaders] = useState<Profile[]>([]);
+  const [readerCount, setReaderCount] = useState(0);
+  const { message, show } = useToast();
 
   async function reload() {
     if (!profile) return;
-    const [s, i, e, reads, sum, mine] = await Promise.all([
+    const [s, i, e, reads, sum, mine, readerList, readerTotal] = await Promise.all([
       getSeries(seriesId),
       listIssues(seriesId),
       getLibraryEntry(profile.id, seriesId),
       listMyReadsForSeries(profile.id, seriesId),
       fetchRatingSummary("series", seriesId),
       fetchMyRating(profile.id, "series", seriesId),
+      fetchSeriesReaders(seriesId),
+      fetchSeriesReaderCount(seriesId),
     ]);
     setSeries(s);
     setIssues(i);
@@ -65,6 +73,8 @@ export default function SeriesDetail({
       setMyReview(mine.review);
     }
     setAddedBy(s.created_by ? await getProfile(s.created_by) : null);
+    setReaders(readerList);
+    setReaderCount(readerTotal);
   }
 
   useEffect(() => {
@@ -109,9 +119,10 @@ export default function SeriesDetail({
     });
     setShowRate(false);
     setSummary(await fetchRatingSummary("series", seriesId));
+    show("rating saved");
   }
 
-  if (!series) return <div className="empty">Loading…</div>;
+  if (!series) return <div className="empty">loading…</div>;
 
   const readCount = issues.filter((i) => readIds.has(i.id)).length;
 
@@ -126,25 +137,45 @@ export default function SeriesDetail({
 
       <div className="card">
         <div style={{ display: "flex", gap: 14 }}>
-          <div className="cover" style={{ width: 72, height: 100 }}>
-            {!series.cover_url && series.title.slice(0, 2).toUpperCase()}
-          </div>
+          {series.cover_url ? (
+            <img className="cover" style={{ width: 72, height: 100 }} src={series.cover_url} alt="" />
+          ) : (
+            <div className="cover" style={{ width: 72, height: 100 }}>
+              {series.title.slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="sub">{series.publisher || "Unknown publisher"}</div>
+            <div className="sub">{series.publisher || "unknown publisher"}</div>
             {series.description && <p style={{ fontSize: 13, color: "var(--text-dim)", margin: "6px 0 0" }}>{series.description}</p>}
             <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <RatingStars value={summary.average ? Math.round(summary.average) : 0} size={16} />
+              <RatingStars value={summary.average ? Math.round(summary.average) : 0} size={14} />
               <span className="sub">
                 {summary.average ? summary.average.toFixed(1) : "—"} ({summary.count})
               </span>
             </div>
             {addedBy && (
               <button className="btn-link" style={{ padding: "6px 0 0" }} onClick={() => onOpenProfile(addedBy.id)}>
-                Added by @{addedBy.username}
+                added by @{addedBy.username}
               </button>
             )}
           </div>
         </div>
+
+        {readerCount > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
+            <div className="avatar-stack">
+              {readers.slice(0, 4).map((r) => (
+                <div key={r.id} className="avatar" onClick={() => onOpenProfile(r.id)}>
+                  {r.username.slice(0, 2).toUpperCase()}
+                </div>
+              ))}
+              {readerCount > 4 && <div className="avatar-more">+{readerCount - 4}</div>}
+            </div>
+            <span className="sub">
+              {readerCount} {readerCount === 1 ? "reader" : "readers"}
+            </span>
+          </div>
+        )}
 
         <div className="tabs-inline" style={{ marginTop: 14, marginBottom: 0 }}>
           {STATUS_OPTIONS.map((s) => (
@@ -154,13 +185,13 @@ export default function SeriesDetail({
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
           <button className="btn-secondary" onClick={() => setShowRate(true)}>
-            {myRating ? `Your rating: ${myRating}★` : "Rate this series"}
+            <Icon name="star" size={12} /> {myRating ? `your rating: ${myRating}` : "rate this series"}
           </button>
           {entry && (
             <button className="btn-danger" onClick={handleRemove}>
-              Remove from library
+              remove from library
             </button>
           )}
         </div>
@@ -168,19 +199,19 @@ export default function SeriesDetail({
 
       <div className="section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>
-          Issues {issues.length > 0 && `· ${readCount}/${issues.length} read`}
+          issues {issues.length > 0 && `· ${readCount}/${issues.length} read`}
         </span>
         <button className="btn-link" onClick={() => setShowAddIssue(true)}>
-          + Add issue
+          + add issue
         </button>
       </div>
 
       <div className="card">
-        {issues.length === 0 && <div className="empty">No issues logged yet.</div>}
+        {issues.length === 0 && <div className="empty">no issues logged yet.</div>}
         {issues.map((issue) => (
           <div className="issue-row" key={issue.id}>
             <span className="num">#{issue.issue_number}</span>
-            <span className="title">{issue.title || "Untitled"}</span>
+            <span className="title">{issue.title || "untitled"}</span>
             <button
               className={`read-toggle ${readIds.has(issue.id) ? "read" : ""}`}
               onClick={() => toggleRead(issue.id)}
@@ -192,19 +223,21 @@ export default function SeriesDetail({
         ))}
       </div>
 
+      <Toast message={message} />
+
       {showRate && (
-        <Modal title={`Rate ${series.title}`} onClose={() => setShowRate(false)}>
+        <Modal title={`rate ${series.title}`} onClose={() => setShowRate(false)}>
           <RatingStars value={myRating} onChange={setMyRating} size={30} />
           <label className="field">
-            <span>Review (optional)</span>
+            <span>review (optional)</span>
             <textarea value={myReview} onChange={(e) => setMyReview(e.target.value)} />
           </label>
           <div className="modal-actions">
             <button className="btn-secondary" onClick={() => setShowRate(false)}>
-              Cancel
+              cancel
             </button>
             <button className="btn-primary" disabled={!myRating} onClick={submitRating}>
-              Save
+              save
             </button>
           </div>
         </Modal>
@@ -263,22 +296,22 @@ function AddIssueModal({
   }
 
   return (
-    <Modal title="Add issue" onClose={onClose}>
+    <Modal title="add issue" onClose={onClose}>
       <label className="field">
-        <span>Issue number</span>
+        <span>issue number</span>
         <input value={issueNumber} onChange={(e) => setIssueNumber(e.target.value)} autoFocus />
       </label>
       <label className="field">
-        <span>Title (optional)</span>
+        <span>title (optional)</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} />
       </label>
       {error && <div className="auth-error">{error}</div>}
       <div className="modal-actions">
         <button className="btn-secondary" onClick={onClose}>
-          Cancel
+          cancel
         </button>
         <button className="btn-primary" disabled={busy || !issueNumber.trim()} onClick={handleSubmit}>
-          Add
+          add
         </button>
       </div>
     </Modal>

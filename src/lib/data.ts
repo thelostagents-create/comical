@@ -119,6 +119,27 @@ export async function fetchLibrary(userId: string): Promise<LibraryRow[]> {
   }));
 }
 
+export async function fetchSeriesReaderCount(seriesId: string): Promise<number> {
+  const { count, error } = await db()
+    .from("library_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("series_id", seriesId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function fetchSeriesReaders(seriesId: string): Promise<Profile[]> {
+  const { data, error } = await db()
+    .from("library_entries")
+    .select("profiles(*)")
+    .eq("series_id", seriesId)
+    .limit(12);
+  if (error) throw error;
+  return ((data ?? []) as unknown as { profiles: Profile | Profile[] | null }[])
+    .map((row) => (Array.isArray(row.profiles) ? row.profiles[0] : row.profiles))
+    .filter((p): p is Profile => Boolean(p));
+}
+
 export async function getLibraryEntry(
   userId: string,
   seriesId: string,

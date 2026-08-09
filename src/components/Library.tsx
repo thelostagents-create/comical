@@ -5,6 +5,7 @@ import type { LibraryStatus, Series } from "../types";
 import { LIBRARY_STATUS_LABELS } from "../types";
 import { Icon } from "./Icons";
 import Modal from "./Modal";
+import { Toast, useToast } from "./Toast";
 
 const FILTERS: Array<LibraryStatus | "all"> = ["all", "reading", "plan_to_read", "completed", "dropped"];
 
@@ -13,6 +14,7 @@ export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: str
   const [rows, setRows] = useState<LibraryRow[] | null>(null);
   const [filter, setFilter] = useState<LibraryStatus | "all">("all");
   const [showAdd, setShowAdd] = useState(false);
+  const { message, show } = useToast();
 
   async function reload() {
     if (!profile) return;
@@ -28,44 +30,61 @@ export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: str
 
   return (
     <div>
-      <div className="page-title">Your Library</div>
+      <div className="page-title">your library</div>
 
       <div className="tabs-inline">
         {FILTERS.map((f) => (
           <button key={f} className={filter === f ? "active" : ""} onClick={() => setFilter(f)}>
-            {f === "all" ? "All" : LIBRARY_STATUS_LABELS[f]}
+            {f === "all" ? "all" : LIBRARY_STATUS_LABELS[f]}
           </button>
         ))}
       </div>
 
-      {rows === null && <div className="empty">Loading…</div>}
+      {rows === null && <div className="empty">loading…</div>}
       {rows !== null && visible.length === 0 && (
         <div className="empty">
-          Nothing here yet.
+          nothing here yet.
           <br />
-          Tap + to add a comic you're reading.
+          tap + to add a comic you're reading.
         </div>
       )}
 
-      {visible.map((row) => (
-        <div className="card series-row" key={row.id} onClick={() => onOpenSeries(row.series_id)}>
-          <div className="cover">{!row.series.cover_url && row.series.title.slice(0, 2).toUpperCase()}</div>
-          <div className="meta">
+      <div className="cover-grid">
+        {visible.map((row) => (
+          <div className="cover-tile" key={row.id} onClick={() => onOpenSeries(row.series_id)}>
+            {row.status === "completed" && (
+              <div className="stamp">
+                read
+                <br />★
+              </div>
+            )}
+            {row.series.cover_url ? (
+              <img className="cover" src={row.series.cover_url} alt="" />
+            ) : (
+              <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
+            )}
             <h3>{row.series.title}</h3>
-            <div className="sub">{row.series.publisher || "—"}</div>
-            <span className="status-pill">{LIBRARY_STATUS_LABELS[row.status]}</span>
+            <div className="tile-meta">
+              <span>
+                <Icon name="book" size={12} />
+                {row.readCount}/{row.issueCount || "–"}
+              </span>
+              <span>{LIBRARY_STATUS_LABELS[row.status]}</span>
+            </div>
             {row.issueCount > 0 && (
               <div className="progress-bar">
                 <div style={{ width: `${Math.round((row.readCount / row.issueCount) * 100)}%` }} />
               </div>
             )}
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <button className="fab" onClick={() => setShowAdd(true)} aria-label="Add series">
         <Icon name="plus" />
       </button>
+
+      <Toast message={message} />
 
       {showAdd && (
         <AddSeriesModal
@@ -73,6 +92,7 @@ export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: str
           onAdded={() => {
             setShowAdd(false);
             reload();
+            show("added to your library");
           }}
         />
       )}
@@ -88,6 +108,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const [title, setTitle] = useState("");
   const [publisher, setPublisher] = useState("");
   const [description, setDescription] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -110,7 +131,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       title: title.trim(),
       publisher: publisher.trim(),
       description: description.trim(),
-      cover_url: null,
+      cover_url: coverUrl.trim() || null,
       created_by: profile.id,
     });
     await addToLibrary(profile.id, series.id);
@@ -119,22 +140,26 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   }
 
   return (
-    <Modal title="Add a comic" onClose={onClose}>
+    <Modal title="add a comic" onClose={onClose}>
       {!creating && (
         <>
           <div className="field">
-            <span>Search the catalog</span>
+            <span>search the catalog</span>
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Saga, Batman, Monstress…"
+              placeholder="saga, batman, monstress…"
             />
           </div>
           <div>
             {results.map((s) => (
               <div className="card series-row" key={s.id} onClick={() => !busy && pick(s)}>
-                <div className="cover">{!s.cover_url && s.title.slice(0, 2).toUpperCase()}</div>
+                {s.cover_url ? (
+                  <img className="cover" src={s.cover_url} alt="" />
+                ) : (
+                  <div className="cover">{s.title.slice(0, 2).toUpperCase()}</div>
+                )}
                 <div className="meta">
                   <h3>{s.title}</h3>
                   <div className="sub">{s.publisher || "—"}</div>
@@ -142,11 +167,11 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
               </div>
             ))}
             {query.trim() && results.length === 0 && (
-              <div className="empty">No matches. Add it as a new series below.</div>
+              <div className="empty">no matches. add it as a new series below.</div>
             )}
           </div>
           <button className="btn-secondary" onClick={() => { setCreating(true); setTitle(query); }}>
-            + Create new series
+            <Icon name="plus" size={13} /> create new series
           </button>
         </>
       )}
@@ -154,23 +179,27 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       {creating && (
         <>
           <label className="field">
-            <span>Title</span>
+            <span>title</span>
             <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus required />
           </label>
           <label className="field">
-            <span>Publisher</span>
-            <input value={publisher} onChange={(e) => setPublisher(e.target.value)} placeholder="Image, Marvel, DC…" />
+            <span>publisher</span>
+            <input value={publisher} onChange={(e) => setPublisher(e.target.value)} placeholder="image, marvel, dc…" />
           </label>
           <label className="field">
-            <span>Description</span>
+            <span>cover image url (optional)</span>
+            <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://…" />
+          </label>
+          <label className="field">
+            <span>description</span>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
           </label>
           <div className="modal-actions">
             <button className="btn-secondary" onClick={() => setCreating(false)}>
-              Back
+              back
             </button>
             <button className="btn-primary" disabled={busy || !title.trim()} onClick={handleCreate}>
-              Add to library
+              add to library
             </button>
           </div>
         </>

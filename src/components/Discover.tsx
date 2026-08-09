@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
 import { fetchFollowing, follow, searchProfiles, searchSeries, unfollow } from "../lib/data";
 import type { Profile, Series } from "../types";
+import { Icon } from "./Icons";
 
 export default function Discover({
   onOpenSeries,
@@ -46,43 +47,52 @@ export default function Discover({
 
   return (
     <div>
-      <div className="page-title">Discover</div>
+      <div className="page-title">discover</div>
 
       <div className="tabs-inline">
         <button className={mode === "series" ? "active" : ""} onClick={() => setMode("series")}>
-          Comics
+          comics
         </button>
         <button className={mode === "people" ? "active" : ""} onClick={() => setMode("people")}>
-          People
+          people
         </button>
       </div>
 
       <div className="search-row">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={mode === "series" ? "Search series…" : "Search by username…"}
-        />
+        <div className="search-box">
+          <Icon name="search" size={16} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={mode === "series" ? "search series…" : "search by username…"}
+          />
+        </div>
       </div>
 
       {mode === "series" &&
         (series.length === 0 ? (
-          <div className="empty">No series found.</div>
+          <div className="empty">no series found.</div>
         ) : (
-          series.map((s) => (
-            <div className="card series-row" key={s.id} onClick={() => onOpenSeries(s.id)}>
-              <div className="cover">{!s.cover_url && s.title.slice(0, 2).toUpperCase()}</div>
-              <div className="meta">
+          <div className="cover-grid">
+            {series.map((s) => (
+              <div className="cover-tile" key={s.id} onClick={() => onOpenSeries(s.id)}>
+                {s.cover_url ? (
+                  <img className="cover" src={s.cover_url} alt="" />
+                ) : (
+                  <div className="cover">{s.title.slice(0, 2).toUpperCase()}</div>
+                )}
                 <h3>{s.title}</h3>
-                <div className="sub">{s.publisher || "—"}</div>
+                <div className="tile-meta">
+                  <span>{s.publisher || "—"}</span>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ))}
 
       {mode === "people" &&
         (people.length === 0 ? (
-          <div className="empty">No readers found.</div>
+          <div className="empty">no readers found.</div>
         ) : (
           <div className="card">
             {people.map((p) => (
@@ -94,7 +104,7 @@ export default function Discover({
                   @{p.username}
                 </div>
                 <button className="btn-secondary" onClick={() => toggleFollow(p.id)}>
-                  {followingIds.has(p.id) ? "Following" : "Follow"}
+                  {followingIds.has(p.id) ? "following" : "follow"}
                 </button>
               </div>
             ))}
