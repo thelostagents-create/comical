@@ -1,14 +1,24 @@
+export type ThemeMode = "dark" | "light";
+
 export const ACCENT_PRESETS = [
   { name: "Blue", hex: "#5b8def" },
+  { name: "Cotton Candy", hex: "#ff9ecb" },
   { name: "Cyan", hex: "#4fc3f7" },
   { name: "Coral", hex: "#ff7a59" },
   { name: "Gold", hex: "#f2b134" },
+  { name: "Lilac", hex: "#b895e0" },
   { name: "Pink", hex: "#e0518c" },
   { name: "Green", hex: "#6fbf73" },
 ];
 
-const STORAGE_KEY = "comical:accent";
-const DEFAULT_ACCENT = ACCENT_PRESETS[0].hex;
+const MODE_KEY = "comical:theme-mode";
+const ACCENT_KEY_PREFIX = "comical:accent:";
+const DEFAULT_MODE: ThemeMode = "dark";
+
+const DEFAULT_ACCENT_BY_MODE: Record<ThemeMode, string> = {
+  dark: "#5b8def",
+  light: "#ff9ecb",
+};
 
 function relativeLuminance(hex: string): number {
   const c = hex.replace("#", "");
@@ -28,27 +38,49 @@ export function applyAccent(hex: string) {
   document.documentElement.style.setProperty("--accent", hex);
   document.documentElement.style.setProperty(
     "--accent-ink",
-    relativeLuminance(hex) > 0.42 ? "#18151c" : "#faf6f2",
+    relativeLuminance(hex) > 0.42 ? "#211a1f" : "#fffdfa",
   );
 }
 
-export function getStoredAccent(): string {
+export function getThemeMode(): ThemeMode {
   try {
-    return localStorage.getItem(STORAGE_KEY) || DEFAULT_ACCENT;
+    return (localStorage.getItem(MODE_KEY) as ThemeMode) || DEFAULT_MODE;
   } catch {
-    return DEFAULT_ACCENT;
+    return DEFAULT_MODE;
   }
 }
 
-export function setStoredAccent(hex: string) {
+export function getStoredAccent(mode: ThemeMode): string {
   try {
-    localStorage.setItem(STORAGE_KEY, hex);
+    return localStorage.getItem(ACCENT_KEY_PREFIX + mode) || DEFAULT_ACCENT_BY_MODE[mode];
+  } catch {
+    return DEFAULT_ACCENT_BY_MODE[mode];
+  }
+}
+
+export function setStoredAccent(hex: string, mode: ThemeMode) {
+  try {
+    localStorage.setItem(ACCENT_KEY_PREFIX + mode, hex);
   } catch {
     // ignore storage failures (private browsing, etc.)
   }
   applyAccent(hex);
 }
 
+export function applyThemeMode(mode: ThemeMode) {
+  document.documentElement.dataset.theme = mode;
+  applyAccent(getStoredAccent(mode));
+}
+
+export function setThemeMode(mode: ThemeMode) {
+  try {
+    localStorage.setItem(MODE_KEY, mode);
+  } catch {
+    // ignore storage failures
+  }
+  applyThemeMode(mode);
+}
+
 export function initTheme() {
-  applyAccent(getStoredAccent());
+  applyThemeMode(getThemeMode());
 }

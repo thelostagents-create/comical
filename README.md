@@ -19,8 +19,11 @@ readers to see their activity — a Goodreads-style tracker for comics.
 - **Social** — find and follow other readers from the Feed tab, browse
   their public shelf and stats, and see what people you follow are reading
   and rating.
+- **Light/dark mode** — toggle from the top bar; dark is near-black, light
+  is a warm beige/cream. Each mode remembers its own accent color.
 - **Custom accent color** — pick your own accent color (presets or a hex
-  code) from the palette icon in the top bar; it's stored per-device.
+  code) from the palette icon in the top bar; it's stored per-device, per
+  mode (dark defaults to blue, light defaults to a cotton-candy pink).
 - **Accounts** — real email/password auth via Supabase, with a unique
   username per user.
 
@@ -43,7 +46,7 @@ npm run preview  # preview the production build
 ```
 src/
   types.ts             # domain types
-  theme.ts              # accent color storage + application (localStorage)
+  theme.ts              # light/dark mode + per-mode accent color (localStorage)
   auth.tsx             # auth context (session + profile) and sign up/in/out
   lib/
     supabase.ts         # Supabase client

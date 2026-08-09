@@ -9,6 +9,7 @@ import Profile from "./components/Profile";
 import SeriesDetail from "./components/SeriesDetail";
 import AccentPicker from "./components/AccentPicker";
 import { Icon } from "./components/Icons";
+import { getThemeMode, setThemeMode, type ThemeMode } from "./theme";
 
 export type View =
   | { tab: "library" }
@@ -22,6 +23,13 @@ function Shell() {
   const { profile, signOut } = useAuth();
   const [view, setView] = useState<View>({ tab: "library" });
   const [showAccentPicker, setShowAccentPicker] = useState(false);
+  const [mode, setMode] = useState<ThemeMode>(getThemeMode());
+
+  function toggleMode() {
+    const next = mode === "dark" ? "light" : "dark";
+    setThemeMode(next);
+    setMode(next);
+  }
 
   function openSeries(seriesId: string) {
     setView((prev) => ({ tab: "series", seriesId, from: prev }));
@@ -66,6 +74,9 @@ function Shell() {
       <header className="topbar">
         <span className="brand">Comical</span>
         <div className="topbar-actions">
+          <button className="icon-btn" onClick={toggleMode} aria-label="Toggle light/dark mode">
+            <Icon name={mode === "dark" ? "sun" : "moon"} size={17} />
+          </button>
           <button className="icon-btn" onClick={() => setShowAccentPicker(true)} aria-label="Change accent color">
             <Icon name="palette" size={17} />
           </button>

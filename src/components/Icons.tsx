@@ -10,7 +10,9 @@ type IconName =
   | "book"
   | "sparkle"
   | "palette"
-  | "userplus";
+  | "userplus"
+  | "sun"
+  | "moon";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = {
@@ -110,6 +112,26 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
           <path d="M2.8 19c1.3-3.3 4-5 6.7-5s5.4 1.7 6.7 5" />
           <line x1="18" y1="5" x2="18" y2="11" />
           <line x1="15" y1="8" x2="21" y2="8" />
+        </svg>
+      );
+    case "sun":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="4.2" />
+          <line x1="12" y1="2.5" x2="12" y2="5" />
+          <line x1="12" y1="19" x2="12" y2="21.5" />
+          <line x1="2.5" y1="12" x2="5" y2="12" />
+          <line x1="19" y1="12" x2="21.5" y2="12" />
+          <line x1="4.9" y1="4.9" x2="6.7" y2="6.7" />
+          <line x1="17.3" y1="17.3" x2="19.1" y2="19.1" />
+          <line x1="4.9" y1="19.1" x2="6.7" y2="17.3" />
+          <line x1="17.3" y1="6.7" x2="19.1" y2="4.9" />
+        </svg>
+      );
+    case "moon":
+      return (
+        <svg {...{ ...common, fill: "currentColor", stroke: "none" }}>
+          <path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" />
         </svg>
       );
   }
