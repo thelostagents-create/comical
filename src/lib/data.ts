@@ -539,3 +539,44 @@ export async function getCharactersBySeriesIds(seriesIds: string[]): Promise<Cha
   if (error) throw error;
   return data ?? [];
 }
+
+// ---------------------------------------------------------------------------
+// Comic Vine (external catalog search, via the "comicvine" edge function)
+// ---------------------------------------------------------------------------
+
+export interface ComicVineVolume {
+  id: string;
+  name: string;
+  publisher: string;
+  imageUrl: string | null;
+  startYear: string | null;
+  issueCount: number | null;
+  description: string;
+}
+
+export interface ComicVineIssue {
+  id: string;
+  issueNumber: string;
+  title: string;
+}
+
+async function invokeComicVine<T>(query: string): Promise<T> {
+  const { data, error } = await db().functions.invoke(`comicvine?${query}`, { method: "GET" });
+  if (error) throw error;
+  return data as T;
+}
+
+export async function searchComicVine(query: string): Promise<ComicVineVolume[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+  const { results } = await invokeComicVine<{ results: (ComicVineVolume | null)[] }>(
+    `resource=search&query=${encodeURIComponent(trimmed)}`,
+  );
+  return results.filter((v): v is ComicVineVolume => v !== null);
+}
+
+export async function getComicVineVolume(
+  id: string,
+): Promise<{ volume: ComicVineVolume | null; issues: ComicVineIssue[] }> {
+  return invokeComicVine(`resource=volume&id=${encodeURIComponent(id)}`);
+}

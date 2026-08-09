@@ -15,6 +15,10 @@ readers to see their activity — a Goodreads-style tracker for comics.
   on series or individual issues.
 - **Discover** — browse the catalog across three categories: Comics,
   Characters, and Shows.
+- **Comic Vine search** — when adding a comic, search Comic Vine's real
+  database instead of typing everything by hand; picking a result imports
+  the title, publisher, cover art, description, and its full issue list.
+  Optional — requires the `comicvine` edge function (see below).
 - **My Journal** — a pinned first tile in your Library with a custom cover
   image. Opens to your reading stats (issues read, series, most-read
   characters) and a running feed of every "blurb" (written review) you've
@@ -71,6 +75,10 @@ src/
     Profile.tsx              # your or someone else's profile, stats, shelf
     AccentPicker.tsx          # accent color picker modal
     RatingStars.tsx, Modal.tsx, Icons.tsx, Toast.tsx   # shared UI
+supabase/
+  migrations/            # schema (run in order in the SQL editor)
+  seed.sql                # optional starter catalog
+  functions/comicvine/     # edge function proxying Comic Vine (optional)
 ```
 
 ## Backend (Supabase)
@@ -94,6 +102,28 @@ This app requires a Supabase project — there's no local/offline mode.
 5. Copy `.env.example` to `.env.local` and fill in your **Project URL** and
    **anon key** (Project Settings → API).
 6. `npm run dev`.
+
+### Comic Vine search (optional)
+
+Lets "Add a comic" search a real, huge cross-publisher comics database
+instead of only your own crowd-sourced catalog. Skip this and the rest of
+the app works exactly the same — you'll just add series by hand or from
+`seed.sql`.
+
+1. Get a free API key at
+   [comicvine.gamespot.com/api](https://comicvine.gamespot.com/api/) (needs
+   a GameSpot/Comic Vine account).
+2. Install the [Supabase CLI](https://supabase.com/docs/guides/cli) if you
+   don't have it, then from the repo root:
+   ```bash
+   supabase login
+   supabase link --project-ref <your-project-ref>   # find this in your project's URL/settings
+   supabase secrets set COMICVINE_API_KEY=<your-key>
+   supabase functions deploy comicvine
+   ```
+3. That's it — no client-side env vars needed, the function URL is derived
+   from your existing Supabase project URL. Comic Vine's free tier is rate
+   limited to 200 requests/hour.
 
 ### Data model
 

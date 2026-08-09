@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
-import { addToLibrary, createSeries, fetchLibrary, searchSeries, upsertRating, type LibraryRow } from "../lib/data";
+import {
+  addToLibrary,
+  createIssue,
+  createSeries,
+  fetchLibrary,
+  getComicVineVolume,
+  searchComicVine,
+  searchSeries,
+  upsertRating,
+  type ComicVineVolume,
+  type LibraryRow,
+} from "../lib/data";
 import { getJournalCover } from "../lib/journalPrefs";
 import type { LibraryStatus, Series } from "../types";
 import { LIBRARY_STATUS_LABELS } from "../types";
@@ -8,6 +19,8 @@ import { Icon } from "./Icons";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
 import { Toast, useToast } from "./Toast";
+
+const MAX_IMPORTED_ISSUES = 60;
 
 const FILTERS: Array<LibraryStatus | "all"> = ["all", "reading", "plan_to_read", "completed", "dropped"];
 
@@ -121,7 +134,7 @@ export default function Library({
   );
 }
 
-type Step = "search" | "create" | "rate";
+type Step = "search" | "create" | "cvsearch" | "rate";
 
 function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
   const { profile } = useAuth();
@@ -136,11 +149,33 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const [cvQuery, setCvQuery] = useState("");
+  const [cvResults, setCvResults] = useState<ComicVineVolume[]>([]);
+  const [cvSearching, setCvSearching] = useState(false);
+  const [cvImportingId, setCvImportingId] = useState<string | null>(null);
+  const [cvError, setCvError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(async () => setResults(await searchSeries(query)), 200);
     return () => clearTimeout(t);
   }, [query]);
+
+  useEffect(() => {
+    if (step !== "cvsearch") return;
+    setCvError(null);
+    const t = setTimeout(async () => {
+      setCvSearching(true);
+      try {
+        setCvResults(await searchComicVine(cvQuery));
+      } catch (e) {
+        setCvError(e instanceof Error ? e.message : "Couldn't reach Comic Vine.");
+        setCvResults([]);
+      } finally {
+        setCvSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [cvQuery, step]);
 
   function pick(series: Series) {
     setChosen(series);
@@ -162,6 +197,37 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
     setStep("rate");
   }
 
+  async function importFromComicVine(volume: ComicVineVolume) {
+    if (!profile) return;
+    setCvImportingId(volume.id);
+    setCvError(null);
+    try {
+      const { issues } = await getComicVineVolume(volume.id);
+      const series = await createSeries({
+        title: volume.name,
+        publisher: volume.publisher,
+        description: volume.description,
+        cover_url: volume.imageUrl,
+        created_by: profile.id,
+      });
+      for (const issue of issues.slice(0, MAX_IMPORTED_ISSUES)) {
+        await createIssue({
+          series_id: series.id,
+          issue_number: issue.issueNumber,
+          title: issue.title,
+          cover_url: null,
+          created_by: profile.id,
+        });
+      }
+      setChosen(series);
+      setStep("rate");
+    } catch (e) {
+      setCvError(e instanceof Error ? e.message : "Couldn't import that series from Comic Vine.");
+    } finally {
+      setCvImportingId(null);
+    }
+  }
+
   async function finalize() {
     if (!profile || !chosen) return;
     setBusy(true);
@@ -180,7 +246,16 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   }
 
   return (
-    <Modal title={step === "rate" ? `Rate ${chosen?.title ?? ""}` : "Add a comic"} onClose={onClose}>
+    <Modal
+      title={
+        step === "rate"
+          ? `Rate ${chosen?.title ?? ""}`
+          : step === "cvsearch"
+            ? "Search Comic Vine"
+            : "Add a comic"
+      }
+      onClose={onClose}
+    >
       {step === "search" && (
         <>
           <div className="field">
@@ -207,11 +282,57 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
               </div>
             ))}
             {query.trim() && results.length === 0 && (
-              <div className="empty">No matches. Add it as a new series below.</div>
+              <div className="empty">No matches in your catalog.</div>
             )}
           </div>
-          <button className="btn-secondary" onClick={() => { setStep("create"); setTitle(query); }}>
-            <Icon name="plus" size={13} /> Create new series
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn-secondary" onClick={() => { setStep("cvsearch"); setCvQuery(query); }}>
+              <Icon name="search" size={13} /> Search Comic Vine
+            </button>
+            <button className="btn-secondary" onClick={() => { setStep("create"); setTitle(query); }}>
+              <Icon name="plus" size={13} /> Create new series
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === "cvsearch" && (
+        <>
+          <div className="field">
+            <span>Search Comic Vine</span>
+            <input
+              autoFocus
+              value={cvQuery}
+              onChange={(e) => setCvQuery(e.target.value)}
+              placeholder="Saga, Batman, Monstress…"
+            />
+          </div>
+          {cvError && <div className="auth-error">{cvError}</div>}
+          <div>
+            {cvResults.map((v) => (
+              <div className="card series-row" key={v.id} onClick={() => !cvImportingId && importFromComicVine(v)}>
+                {v.imageUrl ? (
+                  <img className="cover" src={v.imageUrl} alt="" />
+                ) : (
+                  <div className="cover">{v.name.slice(0, 2).toUpperCase()}</div>
+                )}
+                <div className="meta">
+                  <h3>{v.name}</h3>
+                  <div className="sub">
+                    {v.publisher || "—"}
+                    {v.startYear ? ` · ${v.startYear}` : ""}
+                    {v.issueCount ? ` · ${v.issueCount} issues` : ""}
+                  </div>
+                </div>
+                {cvImportingId === v.id && <span className="sub">Importing…</span>}
+              </div>
+            ))}
+            {!cvSearching && !cvError && cvQuery.trim() && cvResults.length === 0 && (
+              <div className="empty">No matches on Comic Vine.</div>
+            )}
+          </div>
+          <button className="btn-secondary" onClick={() => setStep("search")}>
+            <Icon name="back" size={13} /> Back
           </button>
         </>
       )}
