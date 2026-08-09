@@ -22,7 +22,9 @@ function db() {
 
 export async function searchSeries(query: string): Promise<Series[]> {
   let q = db().from("series").select("*").order("title");
-  if (query.trim()) q = q.ilike("title", `%${query.trim()}%`);
+  const trimmed = query.trim();
+  if (trimmed)
+    q = q.or(`title.ilike.%${trimmed}%,publisher.ilike.%${trimmed}%,description.ilike.%${trimmed}%`);
   const { data, error } = await q.limit(50);
   if (error) throw error;
   return data ?? [];

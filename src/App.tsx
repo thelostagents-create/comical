@@ -6,11 +6,12 @@ import Discover from "./components/Discover";
 import Feed from "./components/Feed";
 import Profile from "./components/Profile";
 import SeriesDetail from "./components/SeriesDetail";
+import FandomChat from "./components/FandomChat";
 import { Icon } from "./components/Icons";
 
 export type View =
   | { tab: "library" }
-  | { tab: "discover" }
+  | { tab: "discover"; query?: string }
   | { tab: "feed" }
   | { tab: "profile"; userId?: string }
   | { tab: "series"; seriesId: string; from: View };
@@ -27,6 +28,10 @@ function Shell() {
     setView({ tab: "profile", userId });
   }
 
+  function openDiscover(query?: string) {
+    setView({ tab: "discover", query });
+  }
+
   let body: JSX.Element;
   if (view.tab === "series") {
     body = (
@@ -39,7 +44,7 @@ function Shell() {
   } else if (view.tab === "library") {
     body = <Library onOpenSeries={openSeries} />;
   } else if (view.tab === "discover") {
-    body = <Discover onOpenSeries={openSeries} onOpenProfile={openProfile} />;
+    body = <Discover initialQuery={view.query} onOpenSeries={openSeries} onOpenProfile={openProfile} />;
   } else if (view.tab === "feed") {
     body = <Feed onOpenSeries={openSeries} onOpenProfile={openProfile} />;
   } else {
@@ -68,12 +73,14 @@ function Shell() {
 
       <main className="content">{body}</main>
 
+      <FandomChat onPick={(query) => openDiscover(query)} />
+
       <nav className="tabbar">
         <button className={tab === "library" ? "active" : ""} onClick={() => setView({ tab: "library" })}>
           <Icon name="library" />
           <span>Library</span>
         </button>
-        <button className={tab === "discover" ? "active" : ""} onClick={() => setView({ tab: "discover" })}>
+        <button className={tab === "discover" ? "active" : ""} onClick={() => openDiscover(undefined)}>
           <Icon name="search" />
           <span>Discover</span>
         </button>

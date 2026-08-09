@@ -5,18 +5,28 @@ import type { Profile, Series } from "../types";
 import { Icon } from "./Icons";
 
 export default function Discover({
+  initialQuery,
   onOpenSeries,
   onOpenProfile,
 }: {
+  initialQuery?: string;
   onOpenSeries: (seriesId: string) => void;
   onOpenProfile: (userId: string) => void;
 }) {
   const { profile } = useAuth();
   const [mode, setMode] = useState<"series" | "people">("series");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery ?? "");
   const [series, setSeries] = useState<Series[]>([]);
   const [people, setPeople] = useState<Profile[]>([]);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (initialQuery !== undefined) {
+      setMode("series");
+      setQuery(initialQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
 
   useEffect(() => {
     if (!profile) return;
@@ -47,7 +57,7 @@ export default function Discover({
 
   return (
     <div>
-      <div className="page-title">discover</div>
+      <div className="page-title">Discover</div>
 
       <div className="tabs-inline">
         <button className={mode === "series" ? "active" : ""} onClick={() => setMode("series")}>
@@ -64,14 +74,14 @@ export default function Discover({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={mode === "series" ? "search series…" : "search by username…"}
+            placeholder={mode === "series" ? "Search series…" : "Search by username…"}
           />
         </div>
       </div>
 
       {mode === "series" &&
         (series.length === 0 ? (
-          <div className="empty">no series found.</div>
+          <div className="empty">No series found.</div>
         ) : (
           <div className="cover-grid">
             {series.map((s) => (
@@ -92,7 +102,7 @@ export default function Discover({
 
       {mode === "people" &&
         (people.length === 0 ? (
-          <div className="empty">no readers found.</div>
+          <div className="empty">No readers found.</div>
         ) : (
           <div className="card">
             {people.map((p) => (
@@ -104,7 +114,7 @@ export default function Discover({
                   @{p.username}
                 </div>
                 <button className="btn-secondary" onClick={() => toggleFollow(p.id)}>
-                  {followingIds.has(p.id) ? "following" : "follow"}
+                  {followingIds.has(p.id) ? "Following" : "Follow"}
                 </button>
               </div>
             ))}

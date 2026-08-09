@@ -8,7 +8,8 @@ type IconName =
   | "check"
   | "star"
   | "book"
-  | "lock";
+  | "lock"
+  | "chat";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = {
@@ -90,6 +91,12 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
         <svg {...common}>
           <rect x="5" y="10.5" width="14" height="9.5" rx="1.5" />
           <path d="M8 10.5V7.5a4 4 0 018 0v3" />
+        </svg>
+      );
+    case "chat":
+      return (
+        <svg {...common}>
+          <path d="M4 5.5h16v10H9l-4 3.5v-3.5H4z" />
         </svg>
       );
   }

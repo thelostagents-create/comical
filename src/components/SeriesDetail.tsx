@@ -119,10 +119,10 @@ export default function SeriesDetail({
     });
     setShowRate(false);
     setSummary(await fetchRatingSummary("series", seriesId));
-    show("rating saved");
+    show("Rating saved");
   }
 
-  if (!series) return <div className="empty">loading…</div>;
+  if (!series) return <div className="empty">Loading…</div>;
 
   const readCount = issues.filter((i) => readIds.has(i.id)).length;
 
@@ -145,7 +145,7 @@ export default function SeriesDetail({
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="sub">{series.publisher || "unknown publisher"}</div>
+            <div className="sub">{series.publisher || "Unknown publisher"}</div>
             {series.description && <p style={{ fontSize: 13, color: "var(--text-dim)", margin: "6px 0 0" }}>{series.description}</p>}
             <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
               <RatingStars value={summary.average ? Math.round(summary.average) : 0} size={14} />
@@ -155,7 +155,7 @@ export default function SeriesDetail({
             </div>
             {addedBy && (
               <button className="btn-link" style={{ padding: "6px 0 0" }} onClick={() => onOpenProfile(addedBy.id)}>
-                added by @{addedBy.username}
+                Added by @{addedBy.username}
               </button>
             )}
           </div>
@@ -172,7 +172,7 @@ export default function SeriesDetail({
               {readerCount > 4 && <div className="avatar-more">+{readerCount - 4}</div>}
             </div>
             <span className="sub">
-              {readerCount} {readerCount === 1 ? "reader" : "readers"}
+              {readerCount} {readerCount === 1 ? "Reader" : "Readers"}
             </span>
           </div>
         )}
@@ -187,11 +187,11 @@ export default function SeriesDetail({
 
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
           <button className="btn-secondary" onClick={() => setShowRate(true)}>
-            <Icon name="star" size={12} /> {myRating ? `your rating: ${myRating}` : "rate this series"}
+            <Icon name="star" size={12} /> {myRating ? `Your rating: ${myRating}` : "Rate this series"}
           </button>
           {entry && (
             <button className="btn-danger" onClick={handleRemove}>
-              remove from library
+              Remove from library
             </button>
           )}
         </div>
@@ -202,16 +202,16 @@ export default function SeriesDetail({
           issues {issues.length > 0 && `· ${readCount}/${issues.length} read`}
         </span>
         <button className="btn-link" onClick={() => setShowAddIssue(true)}>
-          + add issue
+          + Add issue
         </button>
       </div>
 
       <div className="card">
-        {issues.length === 0 && <div className="empty">no issues logged yet.</div>}
+        {issues.length === 0 && <div className="empty">No issues logged yet.</div>}
         {issues.map((issue) => (
           <div className="issue-row" key={issue.id}>
             <span className="num">#{issue.issue_number}</span>
-            <span className="title">{issue.title || "untitled"}</span>
+            <span className="title">{issue.title || "Untitled"}</span>
             <button
               className={`read-toggle ${readIds.has(issue.id) ? "read" : ""}`}
               onClick={() => toggleRead(issue.id)}
@@ -226,18 +226,18 @@ export default function SeriesDetail({
       <Toast message={message} />
 
       {showRate && (
-        <Modal title={`rate ${series.title}`} onClose={() => setShowRate(false)}>
+        <Modal title={`Rate ${series.title}`} onClose={() => setShowRate(false)}>
           <RatingStars value={myRating} onChange={setMyRating} size={30} />
           <label className="field">
-            <span>review (optional)</span>
+            <span>Review (optional)</span>
             <textarea value={myReview} onChange={(e) => setMyReview(e.target.value)} />
           </label>
           <div className="modal-actions">
             <button className="btn-secondary" onClick={() => setShowRate(false)}>
-              cancel
+              Cancel
             </button>
             <button className="btn-primary" disabled={!myRating} onClick={submitRating}>
-              save
+              Save
             </button>
           </div>
         </Modal>
@@ -296,22 +296,22 @@ function AddIssueModal({
   }
 
   return (
-    <Modal title="add issue" onClose={onClose}>
+    <Modal title="Add issue" onClose={onClose}>
       <label className="field">
-        <span>issue number</span>
+        <span>Issue number</span>
         <input value={issueNumber} onChange={(e) => setIssueNumber(e.target.value)} autoFocus />
       </label>
       <label className="field">
-        <span>title (optional)</span>
+        <span>Title (optional)</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} />
       </label>
       {error && <div className="auth-error">{error}</div>}
       <div className="modal-actions">
         <button className="btn-secondary" onClick={onClose}>
-          cancel
+          Cancel
         </button>
         <button className="btn-primary" disabled={busy || !issueNumber.trim()} onClick={handleSubmit}>
-          add
+          Add
         </button>
       </div>
     </Modal>

@@ -30,7 +30,7 @@ export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: str
 
   return (
     <div>
-      <div className="page-title">your library</div>
+      <div className="page-title">Your Library</div>
 
       <div className="tabs-inline">
         {FILTERS.map((f) => (
@@ -40,12 +40,12 @@ export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: str
         ))}
       </div>
 
-      {rows === null && <div className="empty">loading…</div>}
+      {rows === null && <div className="empty">Loading…</div>}
       {rows !== null && visible.length === 0 && (
         <div className="empty">
-          nothing here yet.
+          Nothing here yet.
           <br />
-          tap + to add a comic you're reading.
+          Tap + to add a comic you're reading.
         </div>
       )}
 
@@ -92,7 +92,7 @@ export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: str
           onAdded={() => {
             setShowAdd(false);
             reload();
-            show("added to your library");
+            show("Added to your library");
           }}
         />
       )}
@@ -140,16 +140,16 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   }
 
   return (
-    <Modal title="add a comic" onClose={onClose}>
+    <Modal title="Add a comic" onClose={onClose}>
       {!creating && (
         <>
           <div className="field">
-            <span>search the catalog</span>
+            <span>Search the catalog</span>
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="saga, batman, monstress…"
+              placeholder="Saga, Batman, Monstress…"
             />
           </div>
           <div>
@@ -167,11 +167,11 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
               </div>
             ))}
             {query.trim() && results.length === 0 && (
-              <div className="empty">no matches. add it as a new series below.</div>
+              <div className="empty">No matches. Add it as a new series below.</div>
             )}
           </div>
           <button className="btn-secondary" onClick={() => { setCreating(true); setTitle(query); }}>
-            <Icon name="plus" size={13} /> create new series
+            <Icon name="plus" size={13} /> Create new series
           </button>
         </>
       )}
@@ -179,27 +179,27 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       {creating && (
         <>
           <label className="field">
-            <span>title</span>
+            <span>Title</span>
             <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus required />
           </label>
           <label className="field">
-            <span>publisher</span>
-            <input value={publisher} onChange={(e) => setPublisher(e.target.value)} placeholder="image, marvel, dc…" />
+            <span>Publisher</span>
+            <input value={publisher} onChange={(e) => setPublisher(e.target.value)} placeholder="Image, Marvel, DC…" />
           </label>
           <label className="field">
-            <span>cover image url (optional)</span>
+            <span>Cover image URL (optional)</span>
             <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://…" />
           </label>
           <label className="field">
-            <span>description</span>
+            <span>Description</span>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
           </label>
           <div className="modal-actions">
             <button className="btn-secondary" onClick={() => setCreating(false)}>
-              back
+              Back
             </button>
             <button className="btn-primary" disabled={busy || !title.trim()} onClick={handleCreate}>
-              add to library
+              Add to library
             </button>
           </div>
         </>
