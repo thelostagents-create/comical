@@ -86,9 +86,14 @@ This app requires a Supabase project — there's no local/offline mode.
    security, and a trigger that auto-creates a profile row on sign-up), then
    `supabase/migrations/0002_characters_shows.sql` (`characters`, `shows`).
 3. Auth → Providers: **Email** should be enabled by default.
-4. Copy `.env.example` to `.env.local` and fill in your **Project URL** and
+4. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
+   to pre-populate the catalog with 12 well-known series (Saga, Batman, The
+   Sandman, Watchmen, Ms. Marvel, Chainsaw Man, Invincible, and more), each
+   with a run of issues already logged. Skip this if you'd rather start
+   from an empty catalog and add everything yourself.
+5. Copy `.env.example` to `.env.local` and fill in your **Project URL** and
    **anon key** (Project Settings → API).
-5. `npm run dev`.
+6. `npm run dev`.
 
 ### Data model
 
