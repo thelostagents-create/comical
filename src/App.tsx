@@ -2,16 +2,18 @@ import { useState } from "react";
 import { AuthProvider, useAuth } from "./auth";
 import AuthGate from "./components/AuthGate";
 import Library from "./components/Library";
+import Fandom from "./components/Fandom";
 import Discover from "./components/Discover";
 import Feed from "./components/Feed";
 import Profile from "./components/Profile";
 import SeriesDetail from "./components/SeriesDetail";
-import FandomChat from "./components/FandomChat";
+import AccentPicker from "./components/AccentPicker";
 import { Icon } from "./components/Icons";
 
 export type View =
   | { tab: "library" }
-  | { tab: "discover"; query?: string }
+  | { tab: "fandom" }
+  | { tab: "discover" }
   | { tab: "feed" }
   | { tab: "profile"; userId?: string }
   | { tab: "series"; seriesId: string; from: View };
@@ -19,6 +21,7 @@ export type View =
 function Shell() {
   const { profile, signOut } = useAuth();
   const [view, setView] = useState<View>({ tab: "library" });
+  const [showAccentPicker, setShowAccentPicker] = useState(false);
 
   function openSeries(seriesId: string) {
     setView((prev) => ({ tab: "series", seriesId, from: prev }));
@@ -26,10 +29,6 @@ function Shell() {
 
   function openProfile(userId?: string) {
     setView({ tab: "profile", userId });
-  }
-
-  function openDiscover(query?: string) {
-    setView({ tab: "discover", query });
   }
 
   let body: JSX.Element;
@@ -43,8 +42,10 @@ function Shell() {
     );
   } else if (view.tab === "library") {
     body = <Library onOpenSeries={openSeries} />;
+  } else if (view.tab === "fandom") {
+    body = <Fandom />;
   } else if (view.tab === "discover") {
-    body = <Discover initialQuery={view.query} onOpenSeries={openSeries} onOpenProfile={openProfile} />;
+    body = <Discover onOpenSeries={openSeries} />;
   } else if (view.tab === "feed") {
     body = <Feed onOpenSeries={openSeries} onOpenProfile={openProfile} />;
   } else {
@@ -64,23 +65,30 @@ function Shell() {
     <div className="shell">
       <header className="topbar">
         <span className="brand">Comical</span>
-        {tab === "profile" && (!("userId" in view) || !view.userId) && (
-          <button className="btn-link" onClick={signOut}>
-            Log out
+        <div className="topbar-actions">
+          <button className="icon-btn" onClick={() => setShowAccentPicker(true)} aria-label="Change accent color">
+            <Icon name="palette" size={17} />
           </button>
-        )}
+          {tab === "profile" && (!("userId" in view) || !view.userId) && (
+            <button className="btn-link" onClick={signOut}>
+              Log out
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="content">{body}</main>
-
-      <FandomChat onPick={(query) => openDiscover(query)} />
 
       <nav className="tabbar">
         <button className={tab === "library" ? "active" : ""} onClick={() => setView({ tab: "library" })}>
           <Icon name="library" />
           <span>Library</span>
         </button>
-        <button className={tab === "discover" ? "active" : ""} onClick={() => openDiscover(undefined)}>
+        <button className={tab === "fandom" ? "active" : ""} onClick={() => setView({ tab: "fandom" })}>
+          <Icon name="sparkle" />
+          <span>Fandom</span>
+        </button>
+        <button className={tab === "discover" ? "active" : ""} onClick={() => setView({ tab: "discover" })}>
           <Icon name="search" />
           <span>Discover</span>
         </button>
@@ -93,6 +101,8 @@ function Shell() {
           <span>Profile</span>
         </button>
       </nav>
+
+      {showAccentPicker && <AccentPicker onClose={() => setShowAccentPicker(false)} />}
     </div>
   );
 }

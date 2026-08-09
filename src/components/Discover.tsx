@@ -1,58 +1,42 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
-import { fetchFollowing, follow, searchProfiles, searchSeries, unfollow } from "../lib/data";
-import type { Profile, Series } from "../types";
+import {
+  createCharacter,
+  createShow,
+  searchCharacters,
+  searchShows,
+  searchSeries,
+} from "../lib/data";
+import type { Character, Series, Show } from "../types";
 import { Icon } from "./Icons";
+import Modal from "./Modal";
 
-export default function Discover({
-  initialQuery,
-  onOpenSeries,
-  onOpenProfile,
-}: {
-  initialQuery?: string;
-  onOpenSeries: (seriesId: string) => void;
-  onOpenProfile: (userId: string) => void;
-}) {
-  const { profile } = useAuth();
-  const [mode, setMode] = useState<"series" | "people">("series");
-  const [query, setQuery] = useState(initialQuery ?? "");
+type Mode = "comics" | "characters" | "shows";
+
+export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: string) => void }) {
+  const [mode, setMode] = useState<Mode>("comics");
+  const [query, setQuery] = useState("");
   const [series, setSeries] = useState<Series[]>([]);
-  const [people, setPeople] = useState<Profile[]>([]);
-  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [shows, setShows] = useState<Show[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
-    if (initialQuery !== undefined) {
-      setMode("series");
-      setQuery(initialQuery);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery]);
-
-  useEffect(() => {
-    if (!profile) return;
-    fetchFollowing(profile.id).then((f) => setFollowingIds(new Set(f.map((x) => x.followee_id))));
-  }, [profile]);
+    setQuery("");
+  }, [mode]);
 
   useEffect(() => {
     const t = setTimeout(async () => {
-      if (mode === "series") setSeries(await searchSeries(query));
-      else if (profile) setPeople(await searchProfiles(query, profile.id));
+      if (mode === "comics") setSeries(await searchSeries(query));
+      else if (mode === "characters") setCharacters(await searchCharacters(query));
+      else setShows(await searchShows(query));
     }, 200);
     return () => clearTimeout(t);
-  }, [query, mode, profile]);
+  }, [query, mode]);
 
-  async function toggleFollow(userId: string) {
-    if (!profile) return;
-    const next = new Set(followingIds);
-    if (next.has(userId)) {
-      next.delete(userId);
-      setFollowingIds(next);
-      await unfollow(profile.id, userId);
-    } else {
-      next.add(userId);
-      setFollowingIds(next);
-      await follow(profile.id, userId);
-    }
+  async function reload() {
+    if (mode === "characters") setCharacters(await searchCharacters(query));
+    else if (mode === "shows") setShows(await searchShows(query));
   }
 
   return (
@@ -60,11 +44,14 @@ export default function Discover({
       <div className="page-title">Discover</div>
 
       <div className="tabs-inline">
-        <button className={mode === "series" ? "active" : ""} onClick={() => setMode("series")}>
-          comics
+        <button className={mode === "comics" ? "active" : ""} onClick={() => setMode("comics")}>
+          Comics
         </button>
-        <button className={mode === "people" ? "active" : ""} onClick={() => setMode("people")}>
-          people
+        <button className={mode === "characters" ? "active" : ""} onClick={() => setMode("characters")}>
+          Characters
+        </button>
+        <button className={mode === "shows" ? "active" : ""} onClick={() => setMode("shows")}>
+          Shows
         </button>
       </div>
 
@@ -74,12 +61,17 @@ export default function Discover({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={mode === "series" ? "Search series…" : "Search by username…"}
+            placeholder={`Search ${mode}…`}
           />
         </div>
+        {mode !== "comics" && (
+          <button className="icon-btn" onClick={() => setShowCreate(true)} aria-label={`Add a ${mode === "characters" ? "character" : "show"}`}>
+            <Icon name="plus" size={16} />
+          </button>
+        )}
       </div>
 
-      {mode === "series" &&
+      {mode === "comics" &&
         (series.length === 0 ? (
           <div className="empty">No series found.</div>
         ) : (
@@ -100,26 +92,151 @@ export default function Discover({
           </div>
         ))}
 
-      {mode === "people" &&
-        (people.length === 0 ? (
-          <div className="empty">No readers found.</div>
+      {mode === "characters" &&
+        (characters.length === 0 ? (
+          <div className="empty">No characters yet. Be the first to add one.</div>
         ) : (
-          <div className="card">
-            {people.map((p) => (
-              <div className="user-row" key={p.id}>
-                <div className="avatar" onClick={() => onOpenProfile(p.id)}>
-                  {p.username.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="name" onClick={() => onOpenProfile(p.id)}>
-                  @{p.username}
-                </div>
-                <button className="btn-secondary" onClick={() => toggleFollow(p.id)}>
-                  {followingIds.has(p.id) ? "Following" : "Follow"}
-                </button>
+          <div className="character-grid">
+            {characters.map((c) => (
+              <div className="character-tile" key={c.id}>
+                {c.image_url ? (
+                  <img className="avatar" src={c.image_url} alt="" />
+                ) : (
+                  <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
+                )}
+                <h3>{c.name}</h3>
               </div>
             ))}
           </div>
         ))}
+
+      {mode === "shows" &&
+        (shows.length === 0 ? (
+          <div className="empty">No shows yet. Be the first to add one.</div>
+        ) : (
+          <div className="cover-grid">
+            {shows.map((s) => (
+              <div className="cover-tile" key={s.id}>
+                {s.image_url ? (
+                  <img className="cover" src={s.image_url} alt="" />
+                ) : (
+                  <div className="cover">{s.title.slice(0, 2).toUpperCase()}</div>
+                )}
+                <h3>{s.title}</h3>
+                <div className="tile-meta">
+                  <span>{s.network || "—"}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+
+      {showCreate && mode === "characters" && (
+        <CreateCharacterModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); reload(); }} />
+      )}
+      {showCreate && mode === "shows" && (
+        <CreateShowModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); reload(); }} />
+      )}
     </div>
+  );
+}
+
+function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const { profile } = useAuth();
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit() {
+    if (!profile || !name.trim()) return;
+    setBusy(true);
+    await createCharacter({
+      name: name.trim(),
+      description: description.trim(),
+      image_url: imageUrl.trim() || null,
+      series_id: null,
+      created_by: profile.id,
+    });
+    setBusy(false);
+    onCreated();
+  }
+
+  return (
+    <Modal title="Add a character" onClose={onClose}>
+      <label className="field">
+        <span>Name</span>
+        <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      </label>
+      <label className="field">
+        <span>Image URL (optional)</span>
+        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" />
+      </label>
+      <label className="field">
+        <span>Description</span>
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+      </label>
+      <div className="modal-actions">
+        <button className="btn-secondary" onClick={onClose}>
+          Cancel
+        </button>
+        <button className="btn-primary" disabled={busy || !name.trim()} onClick={handleSubmit}>
+          Add
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function CreateShowModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const { profile } = useAuth();
+  const [title, setTitle] = useState("");
+  const [network, setNetwork] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit() {
+    if (!profile || !title.trim()) return;
+    setBusy(true);
+    await createShow({
+      title: title.trim(),
+      network: network.trim(),
+      description: description.trim(),
+      image_url: imageUrl.trim() || null,
+      series_id: null,
+      created_by: profile.id,
+    });
+    setBusy(false);
+    onCreated();
+  }
+
+  return (
+    <Modal title="Add a show" onClose={onClose}>
+      <label className="field">
+        <span>Title</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
+      </label>
+      <label className="field">
+        <span>Network / platform</span>
+        <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="Netflix, HBO, Disney+…" />
+      </label>
+      <label className="field">
+        <span>Cover image URL (optional)</span>
+        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" />
+      </label>
+      <label className="field">
+        <span>Description</span>
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+      </label>
+      <div className="modal-actions">
+        <button className="btn-secondary" onClick={onClose}>
+          Cancel
+        </button>
+        <button className="btn-primary" disabled={busy || !title.trim()} onClick={handleSubmit}>
+          Add
+        </button>
+      </div>
+    </Modal>
   );
 }

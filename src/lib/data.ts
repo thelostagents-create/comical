@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type {
+  Character,
   Follow,
   Issue,
   LibraryEntry,
@@ -9,6 +10,7 @@ import type {
   RatingTargetType,
   Read,
   Series,
+  Show,
 } from "../types";
 
 function db() {
@@ -66,6 +68,54 @@ export async function createIssue(input: {
   created_by: string;
 }): Promise<Issue> {
   const { data, error } = await db().from("issues").insert(input).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// characters & shows (shared catalog, browsable from Discover)
+// ---------------------------------------------------------------------------
+
+export async function searchCharacters(query: string): Promise<Character[]> {
+  let q = db().from("characters").select("*").order("name");
+  const trimmed = query.trim();
+  if (trimmed) q = q.or(`name.ilike.%${trimmed}%,description.ilike.%${trimmed}%`);
+  const { data, error } = await q.limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createCharacter(input: {
+  name: string;
+  description: string;
+  image_url: string | null;
+  series_id: string | null;
+  created_by: string;
+}): Promise<Character> {
+  const { data, error } = await db().from("characters").insert(input).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function searchShows(query: string): Promise<Show[]> {
+  let q = db().from("shows").select("*").order("title");
+  const trimmed = query.trim();
+  if (trimmed)
+    q = q.or(`title.ilike.%${trimmed}%,network.ilike.%${trimmed}%,description.ilike.%${trimmed}%`);
+  const { data, error } = await q.limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createShow(input: {
+  title: string;
+  network: string;
+  description: string;
+  image_url: string | null;
+  series_id: string | null;
+  created_by: string;
+}): Promise<Show> {
+  const { data, error } = await db().from("shows").insert(input).select().single();
   if (error) throw error;
   return data;
 }
