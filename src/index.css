@@ -1,20 +1,20 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap");
 
 :root {
-  --bg: #05070d;
-  --bg-alt: #0a0e18;
-  --card: #101526;
-  --card-hi: #151b30;
-  --border: rgba(130, 165, 255, 0.14);
-  --border-soft: rgba(130, 165, 255, 0.08);
-  --text: #eef2fb;
-  --text-dim: #7c88a8;
+  --bg: #040404;
+  --bg-alt: #0a0a0a;
+  --card: #131313;
+  --card-hi: #191919;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-soft: rgba(255, 255, 255, 0.06);
+  --text: #f2f2f0;
+  --text-dim: #8c8c92;
   --accent: #5b8def;
-  --accent-ink: #05070d;
+  --accent-ink: #040404;
   --stamp: #e0a758;
   --danger: #ff6b6b;
   --radius: 18px;
-  --shadow: 0 12px 32px rgba(2, 4, 12, 0.55);
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-display: "Outfit", "Inter", -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -129,7 +129,7 @@ h3 {
 .tabbar {
   display: flex;
   border-top: 1px solid var(--border-soft);
-  background: rgba(5, 7, 13, 0.92);
+  background: rgba(4, 4, 4, 0.92);
   backdrop-filter: blur(14px);
   flex-shrink: 0;
   padding-bottom: env(safe-area-inset-bottom, 0);
@@ -594,7 +594,7 @@ h3 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(2, 4, 10, 0.72);
+  background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: flex-end;
@@ -784,7 +784,7 @@ h3 {
   border-radius: 50%;
   border: 1.5px dashed var(--stamp);
   color: var(--stamp);
-  background: rgba(5, 7, 13, 0.75);
+  background: rgba(4, 4, 4, 0.75);
   backdrop-filter: blur(4px);
   transform: rotate(-8deg);
   text-align: center;
