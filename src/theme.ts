@@ -1,8 +1,8 @@
 export const ACCENT_PRESETS = [
+  { name: "Blue", hex: "#5b8def" },
+  { name: "Cyan", hex: "#4fc3f7" },
   { name: "Coral", hex: "#ff7a59" },
   { name: "Gold", hex: "#f2b134" },
-  { name: "Teal", hex: "#45b0a6" },
-  { name: "Blue", hex: "#5b8def" },
   { name: "Pink", hex: "#e0518c" },
   { name: "Green", hex: "#6fbf73" },
 ];
