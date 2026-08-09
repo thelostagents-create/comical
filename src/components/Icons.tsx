@@ -12,7 +12,8 @@ type IconName =
   | "palette"
   | "userplus"
   | "sun"
-  | "moon";
+  | "moon"
+  | "edit";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = {
@@ -132,6 +133,13 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
       return (
         <svg {...{ ...common, fill: "currentColor", stroke: "none" }}>
           <path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" />
+        </svg>
+      );
+    case "edit":
+      return (
+        <svg {...common}>
+          <path d="M4 20l.9-4.2L15.8 4.9a1.6 1.6 0 012.3 0l1 1a1.6 1.6 0 010 2.3L8.2 19.1z" />
+          <line x1="13.8" y1="6.9" x2="17.1" y2="10.2" />
         </svg>
       );
   }

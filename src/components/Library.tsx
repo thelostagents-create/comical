@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
 import { addToLibrary, createSeries, fetchLibrary, searchSeries, upsertRating, type LibraryRow } from "../lib/data";
+import { getJournalCover } from "../lib/journalPrefs";
 import type { LibraryStatus, Series } from "../types";
 import { LIBRARY_STATUS_LABELS } from "../types";
 import { Icon } from "./Icons";
@@ -10,7 +11,13 @@ import { Toast, useToast } from "./Toast";
 
 const FILTERS: Array<LibraryStatus | "all"> = ["all", "reading", "plan_to_read", "completed", "dropped"];
 
-export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: string) => void }) {
+export default function Library({
+  onOpenSeries,
+  onOpenJournal,
+}: {
+  onOpenSeries: (seriesId: string) => void;
+  onOpenJournal: () => void;
+}) {
   const { profile } = useAuth();
   const [rows, setRows] = useState<LibraryRow[] | null>(null);
   const [filter, setFilter] = useState<LibraryStatus | "all">("all");
@@ -51,6 +58,19 @@ export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: str
       )}
 
       <div className="cover-grid">
+        <div className="cover-tile journal-tile" onClick={onOpenJournal}>
+          {getJournalCover() ? (
+            <img className="cover" src={getJournalCover()!} alt="" />
+          ) : (
+            <div className="cover">
+              <Icon name="sparkle" size={18} />
+            </div>
+          )}
+          <h3>My Journal</h3>
+          <div className="tile-meta">
+            <span>your blurbs</span>
+          </div>
+        </div>
         {visible.map((row) => (
           <div className="cover-tile" key={row.id} onClick={() => onOpenSeries(row.series_id)}>
             {row.status === "completed" && (
@@ -67,7 +87,7 @@ export default function Library({ onOpenSeries }: { onOpenSeries: (seriesId: str
             <h3>{row.series.title}</h3>
             <div className="tile-meta">
               <span>
-                <Icon name="book" size={12} />
+                <Icon name="book" size={9} />
                 {row.readCount}/{row.issueCount || "–"}
               </span>
               <span>{LIBRARY_STATUS_LABELS[row.status]}</span>

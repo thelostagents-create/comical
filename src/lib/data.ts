@@ -442,8 +442,30 @@ export async function fetchFeed(userId: string, limit = 40): Promise<FeedItem[]>
       series: r.issues.series,
     }));
 
-  const targetSeriesIds = (ratings ?? []).filter((r) => r.target_type === "series").map((r) => r.target_id);
-  const targetIssueIds = (ratings ?? []).filter((r) => r.target_type === "issue").map((r) => r.target_id);
+  const labelByRatingId = await labelRatings(ratings ?? []);
+  const ratingItems: FeedItem[] = (ratings ?? [])
+    .filter((r) => profileById.get(r.user_id))
+    .map((r) => ({
+      kind: "rating",
+      id: r.id,
+      at: r.updated_at,
+      profile: profileById.get(r.user_id)!,
+      rating: r,
+      label: labelByRatingId.get(r.id) ?? (r.target_type === "series" ? "a series" : "an issue"),
+    }));
+
+  return [...readItems, ...ratingItems]
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------
+// journal (a user's own written reviews, plus reading stats)
+// ---------------------------------------------------------------------------
+
+async function labelRatings(ratings: Rating[]): Promise<Map<string, string>> {
+  const targetSeriesIds = ratings.filter((r) => r.target_type === "series").map((r) => r.target_id);
+  const targetIssueIds = ratings.filter((r) => r.target_type === "issue").map((r) => r.target_id);
 
   const seriesTitleById = new Map<string, string>();
   if (targetSeriesIds.length) {
@@ -467,21 +489,53 @@ export async function fetchFeed(userId: string, limit = 40): Promise<FeedItem[]>
     }
   }
 
-  const ratingItems: FeedItem[] = (ratings ?? [])
-    .filter((r) => profileById.get(r.user_id))
-    .map((r) => ({
-      kind: "rating",
-      id: r.id,
-      at: r.updated_at,
-      profile: profileById.get(r.user_id)!,
-      rating: r,
-      label:
-        r.target_type === "series"
-          ? seriesTitleById.get(r.target_id) ?? "a series"
-          : issueLabelById.get(r.target_id) ?? "an issue",
-    }));
+  const labelById = new Map<string, string>();
+  for (const r of ratings) {
+    labelById.set(
+      r.id,
+      r.target_type === "series"
+        ? seriesTitleById.get(r.target_id) ?? "a series"
+        : issueLabelById.get(r.target_id) ?? "an issue",
+    );
+  }
+  return labelById;
+}
 
-  return [...readItems, ...ratingItems]
-    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-    .slice(0, limit);
+export interface Blurb {
+  id: string;
+  at: string;
+  rating: number;
+  review: string;
+  label: string;
+  targetType: RatingTargetType;
+  targetId: string;
+}
+
+export async function fetchMyBlurbs(userId: string): Promise<Blurb[]> {
+  const { data, error } = await db()
+    .from("ratings")
+    .select("*")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  const withReview = (data ?? []).filter((r) => r.review.trim().length > 0);
+  if (withReview.length === 0) return [];
+
+  const labelByRatingId = await labelRatings(withReview);
+  return withReview.map((r) => ({
+    id: r.id,
+    at: r.updated_at,
+    rating: r.rating,
+    review: r.review,
+    targetType: r.target_type,
+    targetId: r.target_id,
+    label: labelByRatingId.get(r.id) ?? (r.target_type === "series" ? "a series" : "an issue"),
+  }));
+}
+
+export async function getCharactersBySeriesIds(seriesIds: string[]): Promise<Character[]> {
+  if (seriesIds.length === 0) return [];
+  const { data, error } = await db().from("characters").select("*").in("series_id", seriesIds).limit(12);
+  if (error) throw error;
+  return data ?? [];
 }

@@ -7,6 +7,7 @@ import Discover from "./components/Discover";
 import Feed from "./components/Feed";
 import Profile from "./components/Profile";
 import SeriesDetail from "./components/SeriesDetail";
+import Journal from "./components/Journal";
 import AccentPicker from "./components/AccentPicker";
 import { Icon } from "./components/Icons";
 import { getThemeMode, setThemeMode, type ThemeMode } from "./theme";
@@ -17,7 +18,8 @@ export type View =
   | { tab: "discover" }
   | { tab: "feed" }
   | { tab: "profile"; userId?: string }
-  | { tab: "series"; seriesId: string; from: View };
+  | { tab: "series"; seriesId: string; from: View }
+  | { tab: "journal"; from: View };
 
 function Shell() {
   const { profile, signOut } = useAuth();
@@ -39,6 +41,10 @@ function Shell() {
     setView({ tab: "profile", userId });
   }
 
+  function openJournal() {
+    setView((prev) => ({ tab: "journal", from: prev }));
+  }
+
   let body: JSX.Element;
   if (view.tab === "series") {
     body = (
@@ -48,8 +54,10 @@ function Shell() {
         onOpenProfile={openProfile}
       />
     );
+  } else if (view.tab === "journal") {
+    body = <Journal onBack={() => setView(view.from)} onOpenSeries={openSeries} />;
   } else if (view.tab === "library") {
-    body = <Library onOpenSeries={openSeries} />;
+    body = <Library onOpenSeries={openSeries} onOpenJournal={openJournal} />;
   } else if (view.tab === "fandom") {
     body = <Fandom />;
   } else if (view.tab === "discover") {
@@ -67,7 +75,7 @@ function Shell() {
     );
   }
 
-  const tab = view.tab === "series" ? view.from.tab : view.tab;
+  const tab = view.tab === "series" || view.tab === "journal" ? view.from.tab : view.tab;
 
   return (
     <div className="shell">

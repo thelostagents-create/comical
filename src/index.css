@@ -49,7 +49,7 @@
 .tabs-inline button,
 .field span,
 .tile-meta,
-.feed-item .when,
+.when,
 .stats-row .stat span,
 .issue-row .num,
 .avatar,
@@ -128,7 +128,7 @@ h3 {
 .brand {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 19px;
+  font-size: 16px;
   letter-spacing: -0.01em;
   color: var(--text);
 }
@@ -318,9 +318,9 @@ h3 {
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
-  margin: 4px 0 14px;
+  margin: 2px 0 12px;
   letter-spacing: -0.01em;
   color: var(--text);
 }
@@ -374,8 +374,8 @@ h3 {
 
 .cover-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
 .cover-tile {
@@ -387,12 +387,12 @@ h3 {
   width: 100%;
   height: auto;
   aspect-ratio: 2 / 3;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .cover-tile h3 {
-  margin: 8px 0 2px;
-  font-size: 13px;
+  margin: 6px 0 1px;
+  font-size: 11.5px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -402,15 +402,19 @@ h3 {
 .cover-tile .tile-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 9.5px;
   color: var(--text-dim);
+  overflow: hidden;
 }
 
 .cover-tile .tile-meta span {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ------------------------------------------------------- character grid */
@@ -751,7 +755,7 @@ h3 {
   font-size: 13px;
 }
 
-.feed-item .when {
+.when {
   font-size: 11px;
   color: var(--text-dim);
   margin-top: 3px;
@@ -794,23 +798,23 @@ h3 {
 
 .stamp {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 6px;
+  left: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 1.5px dashed var(--stamp);
+  border: 1.3px dashed var(--stamp);
   color: var(--stamp);
   background: rgba(4, 4, 4, 0.75);
   backdrop-filter: blur(4px);
   transform: rotate(-8deg);
   text-align: center;
-  font-size: 7px;
+  font-size: 5px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   line-height: 1.15;
 }
@@ -881,4 +885,76 @@ h3 {
   color: var(--text);
   font-size: 18px;
   margin: 6px 0 0;
+}
+
+/* -------------------------------------------------------------- journal */
+
+.journal-tile .cover {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 35%, var(--card-hi)), var(--bg-alt));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.journal-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+}
+
+.journal-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.journal-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 25%, var(--card)), var(--bg-alt));
+}
+
+.journal-cover-edit {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(4, 4, 4, 0.55);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.blurb-card {
+  cursor: pointer;
+}
+
+.blurb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.blurb-label {
+  font-weight: 600;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blurb-review {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  font-style: italic;
 }

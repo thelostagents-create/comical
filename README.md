@@ -15,6 +15,10 @@ readers to see their activity — a Goodreads-style tracker for comics.
   on series or individual issues.
 - **Discover** — browse the catalog across three categories: Comics,
   Characters, and Shows.
+- **My Journal** — a pinned first tile in your Library with a custom cover
+  image. Opens to your reading stats (issues read, series, most-read
+  characters) and a running feed of every "blurb" (written review) you've
+  left on a series or issue.
 - **Fandom** — a placeholder tab reserved for future fandom hubs.
 - **Social** — find and follow other readers from the Feed tab, browse
   their public shelf and stats, and see what people you follow are reading
@@ -51,11 +55,15 @@ src/
   lib/
     supabase.ts         # Supabase client
     data.ts              # all reads/writes: series, issues, characters,
-                          # shows, library, reads, ratings, follows, feed
+                          # shows, library, reads, ratings, follows, feed,
+                          # journal blurbs
+    journalPrefs.ts       # journal cover image preference (localStorage)
+    format.ts              # shared display helpers (timeAgo)
   App.tsx               # tab shell (Library / Fandom / Discover / Feed / Profile)
   components/
     AuthGate.tsx         # login/signup screen, gates the app on a session
     Library.tsx          # your shelf + add-series flow (search/create + rate)
+    Journal.tsx           # pinned "My Journal" — stats, top characters, blurbs
     SeriesDetail.tsx      # series info, status, rating, issue list + add issue
     Discover.tsx          # browse Comics / Characters / Shows
     Fandom.tsx             # placeholder tab
