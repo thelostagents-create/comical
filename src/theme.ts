@@ -13,7 +13,7 @@ export const ACCENT_PRESETS = [
 
 const MODE_KEY = "comical:theme-mode";
 const ACCENT_KEY_PREFIX = "comical:accent:";
-const DEFAULT_MODE: ThemeMode = "dark";
+const DEFAULT_MODE: ThemeMode = "light";
 
 const DEFAULT_ACCENT_BY_MODE: Record<ThemeMode, string> = {
   dark: "#5b8def",
