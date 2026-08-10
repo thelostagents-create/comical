@@ -3,12 +3,14 @@ import { useAuth } from "../auth";
 import {
   createCharacter,
   createShow,
+  fetchCharacterSpotlights,
   fetchRecentCharacters,
   fetchRecentShows,
   fetchRecentSeries,
   searchCharacters,
   searchShows,
   searchSeries,
+  type CharacterSpotlight,
 } from "../lib/data";
 import type { Character, Series, Show } from "../types";
 import EditCharacterImageModal from "./EditCharacterImageModal";
@@ -26,6 +28,8 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
   const [shows, setShows] = useState<Show[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [spotlightCharacter, setSpotlightCharacter] = useState<Character | null>(null);
+  const [spotlights, setSpotlights] = useState<CharacterSpotlight[] | null>(null);
 
   useEffect(() => {
     setQuery("");
@@ -46,6 +50,12 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
     const trimmed = query.trim();
     if (mode === "characters") setCharacters(trimmed ? await searchCharacters(query) : await fetchRecentCharacters());
     else if (mode === "shows") setShows(trimmed ? await searchShows(query) : await fetchRecentShows());
+  }
+
+  async function openSpotlights(c: Character) {
+    setSpotlightCharacter(c);
+    setSpotlights(null);
+    setSpotlights(await fetchCharacterSpotlights(c.id));
   }
 
   return (
@@ -117,7 +127,17 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
               </div>
             )}
             {characters.map((c) => (
-              <div className="character-tile" key={c.id} onClick={() => setEditingCharacter(c)}>
+              <div className="character-tile" key={c.id} onClick={() => openSpotlights(c)}>
+                <button
+                  className="character-tile-edit"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingCharacter(c);
+                  }}
+                  aria-label={`Edit ${c.name}'s photo`}
+                >
+                  <Icon name="edit" size={11} />
+                </button>
                 {c.image_url ? (
                   <img className="avatar" src={c.image_url} alt="" />
                 ) : (
@@ -172,6 +192,40 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
             setEditingCharacter(null);
           }}
         />
+      )}
+
+      {spotlightCharacter && (
+        <Modal title={`${spotlightCharacter.name} — Comic Spotlights`} onClose={() => setSpotlightCharacter(null)}>
+          {spotlights === null && <div className="empty">Loading…</div>}
+          {spotlights !== null && spotlights.length === 0 && (
+            <div className="empty">
+              No comics in the catalog are linked to {spotlightCharacter.name} yet — this only
+              covers series imported from Comic Vine with real issue data.
+            </div>
+          )}
+          {spotlights?.map(({ series: s, issueCount }) => (
+            <div
+              className="card series-row"
+              key={s.id}
+              onClick={() => {
+                setSpotlightCharacter(null);
+                onOpenSeries(s.id);
+              }}
+            >
+              {s.cover_url ? (
+                <img className="cover" src={s.cover_url} alt="" />
+              ) : (
+                <div className="cover">{s.title.slice(0, 2).toUpperCase()}</div>
+              )}
+              <div className="meta">
+                <h3>{s.title}</h3>
+                <div className="sub">
+                  {s.publisher || "—"} · {issueCount} {issueCount === 1 ? "issue" : "issues"}
+                </div>
+              </div>
+            </div>
+          ))}
+        </Modal>
       )}
     </div>
   );

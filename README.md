@@ -20,10 +20,14 @@ readers to see their activity — a Goodreads-style tracker for comics.
   Characters, and Shows. Each tab opens to just the 6 most-recently-added
   catalog entries (fewer rows to fetch/render before you've typed
   anything); type to search the full catalog. Tap a character (here or in
-  Journal's most-read characters) to set a permanent photo on the shared
-  catalog record — paste a URL or upload one. Only the character's original
-  creator can do this (row-level security), so it only works for characters
-  you added yourself, e.g. via your own Comic Vine import.
+  Journal's most-read characters) to see their **Comic Spotlights** — the
+  series in the shared catalog with the most issues linking to them
+  (`issue_characters`, from Comic Vine imports), catalog-wide rather than
+  just what you've personally read. Use the small pencil button on a
+  character's tile to set a permanent photo on the shared catalog record —
+  paste a URL or upload one. Only the character's original creator can do
+  this (row-level security), so it only works for characters you added
+  yourself, e.g. via your own Comic Vine import.
 - **Comic Vine search** — when adding a comic, search Comic Vine's real
   database instead of typing everything by hand, with an optional year
   filter for when a title has multiple runs (e.g. several different

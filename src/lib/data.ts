@@ -1059,6 +1059,43 @@ export async function fetchCharactersByIds(ids: string[]): Promise<Character[]> 
   return data ?? [];
 }
 
+export interface CharacterSpotlight {
+  series: Series;
+  issueCount: number;
+}
+
+// A character's main comics across the whole shared catalog, not just what
+// the current user has personally read — ranked by how many linked issues
+// each series has (issue_characters), so the series they show up in most
+// surface first. Used for Discover's "Comic Spotlights".
+export async function fetchCharacterSpotlights(characterId: string, limit = 6): Promise<CharacterSpotlight[]> {
+  const { data: links, error: linksErr } = await db()
+    .from("issue_characters")
+    .select("issue_id, issues!inner(series_id)")
+    .eq("character_id", characterId);
+  if (linksErr) throw linksErr;
+
+  const countBySeriesId = new Map<string, number>();
+  for (const l of (links ?? []) as unknown as { issue_id: string; issues: { series_id: string } }[]) {
+    const seriesId = l.issues.series_id;
+    countBySeriesId.set(seriesId, (countBySeriesId.get(seriesId) ?? 0) + 1);
+  }
+  if (countBySeriesId.size === 0) return [];
+
+  const topSeriesIds = [...countBySeriesId.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id]) => id);
+
+  const { data: seriesRows, error: seriesErr } = await db().from("series").select("*").in("id", topSeriesIds);
+  if (seriesErr) throw seriesErr;
+  const seriesById = new Map((seriesRows ?? []).map((s) => [s.id, s]));
+
+  return topSeriesIds
+    .filter((id) => seriesById.get(id))
+    .map((id) => ({ series: seriesById.get(id)!, issueCount: countBySeriesId.get(id)! }));
+}
+
 // ---------------------------------------------------------------------------
 // notifications
 // ---------------------------------------------------------------------------
