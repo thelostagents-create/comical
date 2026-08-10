@@ -102,20 +102,36 @@ export default function Profile({
 
   return (
     <div>
-      <div className="page-title">{isSelf ? "You" : `@${target.username}`}</div>
+      <div className="profile-header">
+        <div className="profile-banner">
+          {target.banner_url ? (
+            <img src={target.banner_url} alt="" />
+          ) : (
+            <div className="profile-banner-placeholder" />
+          )}
+          {isSelf && (
+            <button className="icon-btn profile-banner-edit" onClick={() => setEditing(true)} aria-label="Edit profile">
+              <Icon name="edit" size={15} />
+            </button>
+          )}
+        </div>
+        <div className="profile-avatar-wrap">
+          {target.avatar_url ? (
+            <img className="avatar profile-avatar" src={target.avatar_url} alt="" />
+          ) : (
+            <div className="avatar profile-avatar">{target.username.slice(0, 2).toUpperCase()}</div>
+          )}
+        </div>
+        <div className="profile-identity">
+          <h2>{target.username}</h2>
+          <div className="sub">@{target.username}</div>
+          {target.fandoms.trim() && <div className="profile-fandoms">fandoms : {target.fandoms}</div>}
+          {target.bio && <div className="sub" style={{ marginTop: 8 }}>{target.bio}</div>}
+        </div>
+      </div>
 
       <div className="card">
-        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-          <div className="avatar" style={{ width: 60, height: 60, fontSize: 18 }}>
-            {target.username.slice(0, 2).toUpperCase()}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ margin: 0 }}>@{target.username}</h3>
-            {target.bio && <div className="sub">{target.bio}</div>}
-          </div>
-        </div>
-
-        <div className="stats-row">
+        <div className="stats-row" style={{ justifyContent: "center" }}>
           <div className="stat">
             <b>{stats.seriesCount}</b>
             <span>Series</span>
@@ -136,7 +152,7 @@ export default function Profile({
 
         {isSelf ? (
           <button className="btn-secondary" onClick={() => setEditing(true)}>
-            Edit bio
+            Edit profile
           </button>
         ) : (
           <button className="btn-secondary" onClick={toggleFollow}>
@@ -190,11 +206,11 @@ export default function Profile({
       )}
 
       {editing && (
-        <EditBioModal
-          initial={target.bio}
+        <EditProfileModal
+          initial={target}
           onClose={() => setEditing(false)}
-          onSaved={async (bio) => {
-            await updateProfile(userId, { bio });
+          onSaved={async (patch) => {
+            await updateProfile(userId, patch);
             await refreshProfile();
             setEditing(false);
             reload();
@@ -247,27 +263,52 @@ export default function Profile({
   );
 }
 
-function EditBioModal({
+function EditProfileModal({
   initial,
   onClose,
   onSaved,
 }: {
-  initial: string;
+  initial: ProfileType;
   onClose: () => void;
-  onSaved: (bio: string) => void;
+  onSaved: (patch: { bio: string; avatar_url: string | null; banner_url: string | null; fandoms: string }) => void;
 }) {
-  const [bio, setBio] = useState(initial);
+  const [bannerUrl, setBannerUrl] = useState(initial.banner_url ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(initial.avatar_url ?? "");
+  const [fandoms, setFandoms] = useState(initial.fandoms);
+  const [bio, setBio] = useState(initial.bio);
+
   return (
-    <Modal title="Edit bio" onClose={onClose}>
+    <Modal title="Edit profile" onClose={onClose}>
+      <ImageField label="Banner image" value={bannerUrl} onChange={setBannerUrl} folder="profile-banners" />
+      <ImageField label="Avatar photo" value={avatarUrl} onChange={setAvatarUrl} folder="avatars" />
+      <label className="field">
+        <span>Fandoms (comma-separated)</span>
+        <input
+          value={fandoms}
+          onChange={(e) => setFandoms(e.target.value)}
+          placeholder="marvel, owl house, dc"
+          maxLength={140}
+        />
+      </label>
       <label className="field">
         <span>Bio</span>
-        <textarea value={bio} onChange={(e) => setBio(e.target.value)} autoFocus maxLength={280} />
+        <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={280} />
       </label>
       <div className="modal-actions">
         <button className="btn-secondary" onClick={onClose}>
           Cancel
         </button>
-        <button className="btn-primary" onClick={() => onSaved(bio.trim())}>
+        <button
+          className="btn-primary"
+          onClick={() =>
+            onSaved({
+              bio: bio.trim(),
+              avatar_url: avatarUrl.trim() || null,
+              banner_url: bannerUrl.trim() || null,
+              fandoms: fandoms.trim(),
+            })
+          }
+        >
           Save
         </button>
       </div>

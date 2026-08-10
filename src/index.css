@@ -1222,6 +1222,77 @@ h3 {
   backdrop-filter: blur(4px);
 }
 
+/* ------------------------------------------------------- profile header */
+
+.profile-header {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.profile-banner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.profile-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-banner-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 30%, var(--card)), var(--bg-alt));
+}
+
+.profile-banner-edit {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(4, 4, 4, 0.55);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.profile-avatar-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: -42px;
+}
+
+.profile-avatar {
+  width: 84px;
+  height: 84px;
+  font-size: 22px;
+  border: 4px solid var(--bg);
+  box-shadow: var(--shadow);
+}
+
+.profile-identity {
+  text-align: center;
+  margin-top: 10px;
+  padding: 0 12px;
+}
+
+.profile-identity h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.profile-fandoms {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 .blurb-card {
   cursor: pointer;
 }

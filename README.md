@@ -58,8 +58,12 @@ readers to see their activity — a Goodreads-style tracker for comics.
   profile, each with its own photo (search the catalog or type a new name).
   Tap one to see every comic run you've read that features them, based on
   the same real Comic Vine character data.
+- **Customizable profile** — a banner image behind your avatar, an avatar
+  photo (paste a URL or upload), and a free-text "fandoms" line, all
+  editable from your own profile.
 - **Social** — find and follow other readers from the Feed tab, browse
-  their stats, and see what people you follow are reading and rating.
+  their stats, and see what people you follow are reading and rating. A
+  series page shows just the reader count, not who they are.
 - **Light/dark mode** — toggle from the top bar; dark is near-black, light
   is a warm beige/cream. Each mode remembers its own accent color.
 - **Custom accent color** — pick your own accent color (presets or a hex
@@ -141,7 +145,9 @@ This app requires a Supabase project — there's no local/offline mode.
    `supabase/migrations/0007_library_starred.sql` (adds a `starred` column to
    `library_entries`, letting you pin a series to the top of your library),
    then `supabase/migrations/0008_notifications.sql` (adds `notifications`,
-   for the reaction/reply/follow bell).
+   for the reaction/reply/follow bell), then
+   `supabase/migrations/0009_profile_customization.sql` (adds `banner_url`
+   and `fandoms` to `profiles`).
 3. Auth → Providers: **Email** should be enabled by default.
 4. For the "Forgot password?" flow to work: Authentication → URL
    Configuration → **Redirect URLs**, add the URL the app is served from

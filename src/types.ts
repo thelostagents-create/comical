@@ -7,6 +7,8 @@ export interface Profile {
   username: string;
   bio: string;
   avatar_url: string | null;
+  banner_url: string | null;
+  fandoms: string;
   created_at: string;
 }
 

@@ -491,7 +491,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 
 export async function updateProfile(
   userId: string,
-  patch: { bio?: string; avatar_url?: string | null },
+  patch: { bio?: string; avatar_url?: string | null; banner_url?: string | null; fandoms?: string },
 ) {
   const { error } = await db().from("profiles").update(patch).eq("id", userId);
   if (error) throw error;
