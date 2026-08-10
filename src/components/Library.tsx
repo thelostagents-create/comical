@@ -102,6 +102,11 @@ export default function Library({
                 <br />★
               </div>
             )}
+            {row.starred && (
+              <div className="pinned-star" aria-label="Starred">
+                <Icon name="star" size={11} />
+              </div>
+            )}
             {row.series.cover_url ? (
               <img className="cover" src={row.series.cover_url} alt="" />
             ) : (

@@ -113,6 +113,19 @@ export async function searchCharacters(query: string): Promise<Character[]> {
   return data ?? [];
 }
 
+// Default view of Discover's Characters tab before the user types anything —
+// mirrors fetchRecentSeries, so opening the tab doesn't pull the whole
+// catalog. Actually searching still checks everything via searchCharacters.
+export async function fetchRecentCharacters(limit = 6): Promise<Character[]> {
+  const { data, error } = await db()
+    .from("characters")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function createCharacter(input: {
   name: string;
   description: string;
@@ -244,6 +257,19 @@ export async function searchShows(query: string): Promise<Show[]> {
   return data ?? [];
 }
 
+// Default view of Discover's Shows tab before the user types anything —
+// mirrors fetchRecentSeries, so opening the tab doesn't pull the whole
+// catalog. Actually searching still checks everything via searchShows.
+export async function fetchRecentShows(limit = 6): Promise<Show[]> {
+  const { data, error } = await db()
+    .from("shows")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function createShow(input: {
   title: string;
   network: string;
@@ -272,6 +298,7 @@ export async function fetchLibrary(userId: string): Promise<LibraryRow[]> {
     .from("library_entries")
     .select("*, series(*)")
     .eq("user_id", userId)
+    .order("starred", { ascending: false })
     .order("added_at", { ascending: false });
   if (error) throw error;
   const rows = (entries ?? []) as (LibraryEntry & { series: Series })[];
@@ -364,6 +391,11 @@ export async function updateLibraryStatus(entryId: string, status: LibraryStatus
 
 export async function removeFromLibrary(entryId: string) {
   const { error } = await db().from("library_entries").delete().eq("id", entryId);
+  if (error) throw error;
+}
+
+export async function setLibraryStarred(entryId: string, starred: boolean) {
+  const { error } = await db().from("library_entries").update({ starred }).eq("id", entryId);
   if (error) throw error;
 }
 

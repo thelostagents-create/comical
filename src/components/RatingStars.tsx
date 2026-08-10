@@ -1,3 +1,5 @@
+import { Icon } from "./Icons";
+
 export default function RatingStars({
   value,
   onChange,
@@ -9,7 +11,7 @@ export default function RatingStars({
 }) {
   const interactive = Boolean(onChange);
   return (
-    <span className="rating-stars" style={{ fontSize: size }}>
+    <span className="rating-stars">
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
@@ -19,7 +21,7 @@ export default function RatingStars({
           onClick={() => onChange?.(n)}
           aria-label={`${n} star${n > 1 ? "s" : ""}`}
         >
-          ★
+          <Icon name="star" size={size} />
         </button>
       ))}
     </span>

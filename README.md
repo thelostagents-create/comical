@@ -10,15 +10,18 @@ readers to see their activity — a Goodreads-style tracker for comics.
 - **Personal library** — add series to your shelf with a status (Plan to
   Read / Reading / Completed / Dropped), mark individual issues read/unread,
   see per-series progress, and rate + leave a note right when you add a
-  comic.
+  comic. Star a series (from its detail page) to pin it to the top of your
+  library, marked with a small star badge on its tile.
 - **Ratings & reviews** — 1-5 star ratings with an optional written review,
   on series or individual issues.
 - **Discover** — browse the catalog across three categories: Comics,
-  Characters, and Shows. Tap a character (here or in Journal's most-read
-  characters) to set a permanent photo on the shared catalog record —
-  paste a URL or upload one. Only the character's original creator can do
-  this (row-level security), so it only works for characters you added
-  yourself, e.g. via your own Comic Vine import.
+  Characters, and Shows. Each tab opens to just the 6 most-recently-added
+  catalog entries (fewer rows to fetch/render before you've typed
+  anything); type to search the full catalog. Tap a character (here or in
+  Journal's most-read characters) to set a permanent photo on the shared
+  catalog record — paste a URL or upload one. Only the character's original
+  creator can do this (row-level security), so it only works for characters
+  you added yourself, e.g. via your own Comic Vine import.
 - **Comic Vine search** — when adding a comic, search Comic Vine's real
   database instead of typing everything by hand, with an optional year
   filter for when a title has multiple runs (e.g. several different
@@ -121,7 +124,9 @@ This app requires a Supabase project — there's no local/offline mode.
    `supabase/migrations/0005_issue_characters.sql` (adds `comicvine_id` to
    `characters` and an `issue_characters` link table for real per-issue
    character data from Comic Vine imports), then
-   `supabase/migrations/0006_fandom_replies.sql` (adds `fandom_replies`).
+   `supabase/migrations/0006_fandom_replies.sql` (adds `fandom_replies`), then
+   `supabase/migrations/0007_library_starred.sql` (adds a `starred` column to
+   `library_entries`, letting you pin a series to the top of your library).
 3. Auth → Providers: **Email** should be enabled by default.
 4. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
    to pre-populate the catalog with 12 well-known series (Saga, Batman, The
@@ -173,7 +178,8 @@ and favorite-character runs will simply stay empty for them.
 - `library_entries`, `reads`, and `ratings` are **per-user** rows (each row
   is owned by one `user_id`) but are publicly readable, so profiles and the
   feed can show what other people are doing. Row-level security restricts
-  writes to the owning user.
+  writes to the owning user. `library_entries.starred` pins a series to the
+  top of that user's library (starred first, then most-recently-added).
 - `follows` is a simple `follower_id -> followee_id` edge table that drives
   the Feed.
 - `fandom_posts` are public tweet-style posts; `fandom_post_hashtags` are

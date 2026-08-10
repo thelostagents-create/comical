@@ -15,6 +15,7 @@ import {
   markRead,
   markUnread,
   removeFromLibrary,
+  setLibraryStarred,
   updateLibraryStatus,
   upsertRating,
 } from "../lib/data";
@@ -108,6 +109,13 @@ export default function SeriesDetail({
     setEntry(null);
   }
 
+  async function handleToggleStar() {
+    if (!entry) return;
+    const starred = !entry.starred;
+    setEntry({ ...entry, starred });
+    await setLibraryStarred(entry.id, starred);
+  }
+
   async function submitRating() {
     if (!profile) return;
     await upsertRating({
@@ -190,9 +198,19 @@ export default function SeriesDetail({
             <Icon name="star" size={12} /> {myRating ? `Your rating: ${myRating}` : "Rate this series"}
           </button>
           {entry && (
-            <button className="btn-danger" onClick={handleRemove}>
-              Remove from library
-            </button>
+            <>
+              <button
+                className={`star-toggle ${entry.starred ? "starred" : ""}`}
+                onClick={handleToggleStar}
+                aria-label={entry.starred ? "Unstar this series" : "Star this series"}
+                title={entry.starred ? "Starred — shows first in your library" : "Star to show first in your library"}
+              >
+                <Icon name="star" size={16} />
+              </button>
+              <button className="btn-danger" onClick={handleRemove}>
+                Remove from library
+              </button>
+            </>
           )}
         </div>
       </div>

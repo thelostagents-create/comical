@@ -3,6 +3,9 @@ import { useAuth } from "../auth";
 import {
   createCharacter,
   createShow,
+  fetchRecentCharacters,
+  fetchRecentShows,
+  fetchRecentSeries,
   searchCharacters,
   searchShows,
   searchSeries,
@@ -30,16 +33,19 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
 
   useEffect(() => {
     const t = setTimeout(async () => {
-      if (mode === "comics") setSeries(await searchSeries(query));
-      else if (mode === "characters") setCharacters(await searchCharacters(query));
-      else setShows(await searchShows(query));
+      const trimmed = query.trim();
+      if (mode === "comics") setSeries(trimmed ? await searchSeries(query) : await fetchRecentSeries());
+      else if (mode === "characters")
+        setCharacters(trimmed ? await searchCharacters(query) : await fetchRecentCharacters());
+      else setShows(trimmed ? await searchShows(query) : await fetchRecentShows());
     }, 200);
     return () => clearTimeout(t);
   }, [query, mode]);
 
   async function reload() {
-    if (mode === "characters") setCharacters(await searchCharacters(query));
-    else if (mode === "shows") setShows(await searchShows(query));
+    const trimmed = query.trim();
+    if (mode === "characters") setCharacters(trimmed ? await searchCharacters(query) : await fetchRecentCharacters());
+    else if (mode === "shows") setShows(trimmed ? await searchShows(query) : await fetchRecentShows());
   }
 
   return (
@@ -79,6 +85,11 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
           <div className="empty">No series found.</div>
         ) : (
           <div className="cover-grid">
+            {!query.trim() && (
+              <div className="sub" style={{ gridColumn: "1 / -1", margin: "-4px 0 2px" }}>
+                Recently added — search to see the rest of the catalog
+              </div>
+            )}
             {series.map((s) => (
               <div className="cover-tile" key={s.id} onClick={() => onOpenSeries(s.id)}>
                 {s.cover_url ? (
@@ -100,6 +111,11 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
           <div className="empty">No characters yet. Be the first to add one.</div>
         ) : (
           <div className="character-grid">
+            {!query.trim() && (
+              <div className="sub" style={{ gridColumn: "1 / -1", margin: "-4px 0 2px" }}>
+                Recently added — search to see the rest of the catalog
+              </div>
+            )}
             {characters.map((c) => (
               <div className="character-tile" key={c.id} onClick={() => setEditingCharacter(c)}>
                 {c.image_url ? (
@@ -119,6 +135,11 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
           <div className="empty">No shows yet. Be the first to add one.</div>
         ) : (
           <div className="cover-grid">
+            {!query.trim() && (
+              <div className="sub" style={{ gridColumn: "1 / -1", margin: "-4px 0 2px" }}>
+                Recently added — search to see the rest of the catalog
+              </div>
+            )}
             {shows.map((s) => (
               <div className="cover-tile" key={s.id}>
                 {s.image_url ? (

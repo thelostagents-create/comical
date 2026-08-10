@@ -35,6 +35,7 @@ export interface LibraryEntry {
   user_id: string;
   series_id: string;
   status: LibraryStatus;
+  starred: boolean;
   added_at: string;
 }
 
