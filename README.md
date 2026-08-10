@@ -23,9 +23,9 @@ readers to see their activity — a Goodreads-style tracker for comics.
   image. Opens to your reading stats (issues read, series, most-read
   characters) and a running feed of every "blurb" (written review) you've
   left on a series or issue.
-- **Fandom** — a tweet-style feed: post short updates with `#hashtags` and
-  an optional photo, react to any post with 👍 ❤️ 😂 😮 😢, and search
-  hashtags to jump straight to everything posted under one.
+- **Fandom** — a tweet-style feed: post short updates with `#hashtags`,
+  react to any post with 👍 ❤️ 😂 😮 😢, and search hashtags to jump
+  straight to everything posted under one.
 - **Favorite characters** — pick up to 9 favorite characters on your
   profile, each with its own photo (search the catalog or type a new name).
 - **Social** — find and follow other readers from the Feed tab, browse
@@ -153,9 +153,9 @@ the app works exactly the same — you'll just add series by hand or from
 
 ## Notes
 
-- Every image field (series/character/show/journal covers, Fandom post
-  photos, favorite-character photos) accepts either a pasted URL or an
-  uploaded file — uploads go to a public `images` bucket in Supabase
-  Storage (see migration `0003`).
+- Every image field (series/character/show/journal covers,
+  favorite-character photos) accepts either a pasted URL or an uploaded
+  file — uploads go to a public `images` bucket in Supabase Storage (see
+  migration `0003`).
 - The accent color is a client-side preference (`localStorage`), not synced
   across devices.

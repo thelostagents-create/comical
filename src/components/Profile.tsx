@@ -41,19 +41,25 @@ export default function Profile({
   const [addingFavorite, setAddingFavorite] = useState(false);
 
   async function reload() {
-    const [p, s, followers, following, favs] = await Promise.all([
+    const [p, s, followers, following] = await Promise.all([
       isSelf ? Promise.resolve(me) : getProfile(userId),
       profileStats(userId),
       fetchFollowers(userId),
       fetchFollowing(userId),
-      fetchFavoriteCharacters(userId),
     ]);
     setTarget(p);
     setStats(s);
     setFollowerCount(followers.length);
     setFollowingCount(following.length);
-    setFavorites(favs);
     if (!isSelf && me) setIsFollowing(followers.some((f) => f.follower_id === me.id));
+
+    // Fetched separately so a failure here (e.g. migration 0003 not yet
+    // applied) can't leave the rest of the profile stuck on "Loading…".
+    try {
+      setFavorites(await fetchFavoriteCharacters(userId));
+    } catch {
+      setFavorites([]);
+    }
   }
 
   useEffect(() => {

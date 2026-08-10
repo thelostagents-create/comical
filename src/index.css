@@ -936,14 +936,6 @@ h3 {
   cursor: pointer;
 }
 
-.post-image {
-  width: 100%;
-  max-height: 320px;
-  object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-}
-
 .reaction-row {
   display: flex;
   gap: 6px;

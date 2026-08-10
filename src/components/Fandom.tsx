@@ -12,7 +12,6 @@ import {
 import { timeAgo } from "../lib/format";
 import { REACTION_EMOJI, REACTION_TYPES, type ReactionType } from "../types";
 import { Icon } from "./Icons";
-import ImageField from "./ImageField";
 
 const HASHTAG_TOKEN_RE = /(#[a-z0-9_]+)/gi;
 
@@ -35,7 +34,6 @@ export default function Fandom() {
   const [tagQuery, setTagQuery] = useState("");
   const [tagResults, setTagResults] = useState<{ tag: string; count: number }[]>([]);
   const [body, setBody] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
   const [posting, setPosting] = useState(false);
 
   async function reload() {
@@ -70,9 +68,8 @@ export default function Fandom() {
     if (!profile || !body.trim()) return;
     setPosting(true);
     try {
-      await createFandomPost({ user_id: profile.id, body: body.trim(), image_url: imageUrl.trim() || null });
+      await createFandomPost({ user_id: profile.id, body: body.trim(), image_url: null });
       setBody("");
-      setImageUrl("");
       await reload();
     } finally {
       setPosting(false);
@@ -157,7 +154,6 @@ export default function Fandom() {
               maxLength={500}
             />
           </label>
-          <ImageField label="Photo (optional)" value={imageUrl} onChange={setImageUrl} folder="fandom" />
           <div className="modal-actions">
             <button className="btn-primary" disabled={posting || !body.trim()} onClick={handlePost}>
               Post
@@ -192,7 +188,6 @@ export default function Fandom() {
             )}
           </div>
           <p className="post-body">{renderBody(post.body, openTag)}</p>
-          {post.image_url && <img className="post-image" src={post.image_url} alt="" />}
           <div className="reaction-row">
             {REACTION_TYPES.map((r) => {
               const count = post.reactionCounts[r] ?? 0;
