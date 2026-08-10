@@ -127,7 +127,7 @@ export async function findOrCreateComicVineCharacter(input: {
     .eq("comicvine_id", input.comicvineId)
     .maybeSingle();
   if (byIdErr) throw byIdErr;
-  if (byId) return byId;
+  if (byId) return byId.image_url ? byId : backfillCharacterImage(byId, input.comicvineId);
 
   const { data: nameMatches, error: nameErr } = await db()
     .from("characters")
@@ -166,6 +166,27 @@ export async function findOrCreateComicVineCharacter(input: {
     series_id: null,
     created_by: input.created_by,
   });
+}
+
+// A character already linked by comicvine_id (from an earlier import,
+// possibly before photo-fetching existed) still gets its photo filled in
+// the next time it's encountered, instead of only ever happening once at
+// creation time.
+async function backfillCharacterImage(character: Character, comicvineId: string): Promise<Character> {
+  try {
+    const cvCharacter = await getComicVineCharacter(comicvineId).catch(() => null);
+    if (!cvCharacter?.imageUrl) return character;
+    const { data: updated, error } = await db()
+      .from("characters")
+      .update({ image_url: cvCharacter.imageUrl })
+      .eq("id", character.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return updated;
+  } catch {
+    return character;
+  }
 }
 
 export async function linkIssueCharacters(issueId: string, characterIds: string[]) {
