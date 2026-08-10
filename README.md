@@ -14,7 +14,11 @@ readers to see their activity — a Goodreads-style tracker for comics.
 - **Ratings & reviews** — 1-5 star ratings with an optional written review,
   on series or individual issues.
 - **Discover** — browse the catalog across three categories: Comics,
-  Characters, and Shows.
+  Characters, and Shows. Tap a character (here or in Journal's most-read
+  characters) to set a permanent photo on the shared catalog record —
+  paste a URL or upload one. Only the character's original creator can do
+  this (row-level security), so it only works for characters you added
+  yourself, e.g. via your own Comic Vine import.
 - **Comic Vine search** — when adding a comic, search Comic Vine's real
   database instead of typing everything by hand, with an optional year
   filter for when a title has multiple runs (e.g. several different

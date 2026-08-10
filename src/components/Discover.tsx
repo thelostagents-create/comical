@@ -8,6 +8,7 @@ import {
   searchSeries,
 } from "../lib/data";
 import type { Character, Series, Show } from "../types";
+import EditCharacterImageModal from "./EditCharacterImageModal";
 import { Icon } from "./Icons";
 import ImageField from "./ImageField";
 import Modal from "./Modal";
@@ -21,6 +22,7 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
   const [characters, setCharacters] = useState<Character[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
 
   useEffect(() => {
     setQuery("");
@@ -99,7 +101,7 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
         ) : (
           <div className="character-grid">
             {characters.map((c) => (
-              <div className="character-tile" key={c.id}>
+              <div className="character-tile" key={c.id} onClick={() => setEditingCharacter(c)}>
                 {c.image_url ? (
                   <img className="avatar" src={c.image_url} alt="" />
                 ) : (
@@ -138,6 +140,17 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
       )}
       {showCreate && mode === "shows" && (
         <CreateShowModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); reload(); }} />
+      )}
+
+      {editingCharacter && (
+        <EditCharacterImageModal
+          character={editingCharacter}
+          onClose={() => setEditingCharacter(null)}
+          onSaved={(imageUrl) => {
+            setCharacters((prev) => prev.map((c) => (c.id === editingCharacter.id ? { ...c, image_url: imageUrl } : c)));
+            setEditingCharacter(null);
+          }}
+        />
       )}
     </div>
   );

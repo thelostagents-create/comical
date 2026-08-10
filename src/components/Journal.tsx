@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
-import { fetchCharactersByIds, fetchMyBlurbs, fetchReadCharacterAppearances, profileStats, type Blurb } from "../lib/data";
+import {
+  fetchCharacterRuns,
+  fetchCharactersByIds,
+  fetchLibrary,
+  fetchMyBlurbs,
+  fetchReadCharacterAppearances,
+  profileStats,
+  type Blurb,
+  type LibraryRow,
+} from "../lib/data";
 import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
 import { timeAgo } from "../lib/format";
 import type { Character } from "../types";
+import EditCharacterImageModal from "./EditCharacterImageModal";
 import { Icon } from "./Icons";
 import ImageField from "./ImageField";
 import Modal from "./Modal";
@@ -23,6 +33,9 @@ export default function Journal({
   const [topCharacters, setTopCharacters] = useState<(Character & { issuesRead: number })[]>([]);
   const [blurbs, setBlurbs] = useState<Blurb[] | null>(null);
   const [showCoverModal, setShowCoverModal] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [openCharacter, setOpenCharacter] = useState<Character | null>(null);
+  const [characterRuns, setCharacterRuns] = useState<LibraryRow[] | null>(null);
 
   useEffect(() => {
     if (!profile) return;
@@ -51,6 +64,14 @@ export default function Journal({
       setTopCharacters(charsWithStats);
     })();
   }, [profile]);
+
+  async function openCharacterRuns(c: Character) {
+    if (!profile) return;
+    setOpenCharacter(c);
+    setCharacterRuns(null);
+    const library = await fetchLibrary(profile.id);
+    setCharacterRuns(await fetchCharacterRuns(profile.id, c, library));
+  }
 
   return (
     <div>
@@ -101,7 +122,17 @@ export default function Journal({
       ) : (
         <div className="character-grid">
           {topCharacters.map((c) => (
-            <div className="character-tile" key={c.id}>
+            <div className="character-tile" key={c.id} onClick={() => openCharacterRuns(c)}>
+              <button
+                className="character-tile-edit"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingCharacter(c);
+                }}
+                aria-label={`Edit ${c.name}'s photo`}
+              >
+                <Icon name="edit" size={11} />
+              </button>
               {c.image_url ? (
                 <img className="avatar" src={c.image_url} alt="" />
               ) : (
@@ -152,6 +183,46 @@ export default function Journal({
             setShowCoverModal(false);
           }}
         />
+      )}
+
+      {editingCharacter && (
+        <EditCharacterImageModal
+          character={editingCharacter}
+          onClose={() => setEditingCharacter(null)}
+          onSaved={(imageUrl) => {
+            setTopCharacters((prev) => prev.map((c) => (c.id === editingCharacter.id ? { ...c, image_url: imageUrl } : c)));
+            setEditingCharacter(null);
+          }}
+        />
+      )}
+
+      {openCharacter && (
+        <Modal title={`${openCharacter.name}'s runs`} onClose={() => setOpenCharacter(null)}>
+          {characterRuns === null && <div className="empty">Loading…</div>}
+          {characterRuns !== null && characterRuns.length === 0 && (
+            <div className="empty">No comic runs read with {openCharacter.name} yet.</div>
+          )}
+          {characterRuns?.map((row) => (
+            <div
+              className="card series-row"
+              key={row.id}
+              onClick={() => {
+                setOpenCharacter(null);
+                onOpenSeries(row.series_id);
+              }}
+            >
+              {row.series.cover_url ? (
+                <img className="cover" src={row.series.cover_url} alt="" />
+              ) : (
+                <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
+              )}
+              <div className="meta">
+                <h3>{row.series.title}</h3>
+                <div className="sub">{row.series.publisher || "—"}</div>
+              </div>
+            </div>
+          ))}
+        </Modal>
       )}
     </div>
   );

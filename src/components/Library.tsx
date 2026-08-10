@@ -5,6 +5,7 @@ import {
   createIssue,
   createSeries,
   fetchLibrary,
+  fetchRecentSeries,
   findOrCreateComicVineCharacter,
   getComicVineVolume,
   linkIssueCharacters,
@@ -167,7 +168,10 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const [cvWarning, setCvWarning] = useState<string | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(async () => setResults(await searchSeries(query)), 200);
+    const t = setTimeout(
+      async () => setResults(query.trim() ? await searchSeries(query) : await fetchRecentSeries()),
+      200,
+    );
     return () => clearTimeout(t);
   }, [query]);
 
@@ -310,6 +314,9 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             />
           </div>
           <div>
+            {!query.trim() && results.length > 0 && (
+              <div className="sub" style={{ margin: "0 0 6px" }}>Recently added — search to see the rest of the catalog</div>
+            )}
             {results.map((s) => (
               <div className="card series-row" key={s.id} onClick={() => pick(s)}>
                 {s.cover_url ? (

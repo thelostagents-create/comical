@@ -46,6 +46,20 @@ export async function searchSeries(query: string): Promise<Series[]> {
   return data ?? [];
 }
 
+// Default view of "Add a comic" before the user types anything — just the
+// newest additions, not the whole catalog, so opening the modal doesn't pull
+// every series in the shared catalog. Actually searching still checks the
+// full catalog via searchSeries above.
+export async function fetchRecentSeries(limit = 6): Promise<Series[]> {
+  const { data, error } = await db()
+    .from("series")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function getSeries(seriesId: string): Promise<Series> {
   const { data, error } = await db().from("series").select("*").eq("id", seriesId).single();
   if (error) throw error;
@@ -109,6 +123,20 @@ export async function createCharacter(input: {
   created_by: string;
 }): Promise<Character> {
   const { data, error } = await db().from("characters").insert(input).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// Sets a character's permanent catalog photo. RLS only allows the
+// character's creator to do this — for anyone else it throws, since the
+// character was made by someone else's import.
+export async function updateCharacterImage(characterId: string, imageUrl: string | null): Promise<Character> {
+  const { data, error } = await db()
+    .from("characters")
+    .update({ image_url: imageUrl })
+    .eq("id", characterId)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 }
