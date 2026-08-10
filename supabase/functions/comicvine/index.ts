@@ -86,6 +86,9 @@ function json(body: unknown, status = 200) {
 // res.ok alone silently treats real API errors as empty-but-successful data.
 async function fetchComicVine(url: URL) {
   const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+  if (res.status === 420) {
+    throw new Error("rate limit reached — wait about an hour and try again");
+  }
   if (!res.ok) throw new Error(`Comic Vine responded ${res.status}`);
   const data = await res.json();
   if (typeof data?.status_code === "number" && data.status_code !== 1) {
@@ -150,7 +153,16 @@ Deno.serve(async (req) => {
 
       const issues: { id: string; issueNumber: string; title: string; characters: { comicvineId: string; name: string }[] }[] = [];
       let characterFetchWarning: string | null = null;
+      let rateLimited = false;
       for (let i = 0; i < issueRefs.length; i += ISSUE_DETAIL_BATCH_SIZE) {
+        if (rateLimited) {
+          // Stop spending more of an already-exhausted quota — the rest of
+          // this volume's issues just import with no character data.
+          issues.push(
+            ...issueRefs.slice(i).map((ref) => ({ id: String(ref.id), issueNumber: ref.issueNumber, title: ref.title, characters: [] })),
+          );
+          break;
+        }
         if (i > 0) await delay(BATCH_DELAY_MS);
         const batch = issueRefs.slice(i, i + ISSUE_DETAIL_BATCH_SIZE);
         const detailed = await Promise.all(
@@ -173,9 +185,9 @@ Deno.serve(async (req) => {
               // whole import — it just imports with no character data for
               // that issue. The first failure's reason is still reported
               // back so it doesn't fail completely silently.
-              if (!characterFetchWarning) {
-                characterFetchWarning = err instanceof Error ? err.message : "Character lookup failed";
-              }
+              const message = err instanceof Error ? err.message : "Character lookup failed";
+              if (!characterFetchWarning) characterFetchWarning = message;
+              if (message.includes("rate limit")) rateLimited = true;
               return { id: String(ref.id), issueNumber: ref.issueNumber, title: ref.title, characters: [] };
             }
           }),
