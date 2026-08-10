@@ -249,3 +249,6 @@ and favorite-character runs will simply stay empty for them.
   migration `0003`).
 - The accent color is a client-side preference (`localStorage`), not synced
   across devices.
+- Every grid/list cover and avatar image below the fold uses native
+  `loading="lazy"`, so scrolling a long Library, Discover, or Fandom feed
+  only downloads the images actually scrolled into view.

@@ -210,7 +210,7 @@ export default function Profile({
                 </button>
               )}
               {fav.series.cover_url ? (
-                <img className="cover" src={fav.series.cover_url} alt="" />
+                <img className="cover" src={fav.series.cover_url} alt="" loading="lazy" />
               ) : (
                 <div className="cover">{fav.series.title.slice(0, 2).toUpperCase()}</div>
               )}
@@ -254,7 +254,7 @@ export default function Profile({
                 </button>
               )}
               {fav.image_url || fav.character.image_url ? (
-                <img className="avatar" src={fav.image_url ?? fav.character.image_url!} alt="" />
+                <img className="avatar" src={fav.image_url ?? fav.character.image_url!} alt="" loading="lazy" />
               ) : (
                 <div className="avatar">{fav.character.name.slice(0, 2).toUpperCase()}</div>
               )}
@@ -323,7 +323,7 @@ export default function Profile({
               }}
             >
               {row.series.cover_url ? (
-                <img className="cover" src={row.series.cover_url} alt="" />
+                <img className="cover" src={row.series.cover_url} alt="" loading="lazy" />
               ) : (
                 <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
               )}
@@ -484,7 +484,7 @@ function AddFavoriteModal({
               {availableResults.slice(0, 6).map((c) => (
                 <div className="user-row" key={c.id} onClick={() => setSelected(c)}>
                   {c.image_url ? (
-                    <img className="avatar avatar-square" src={c.image_url} alt="" />
+                    <img className="avatar avatar-square" src={c.image_url} alt="" loading="lazy" />
                   ) : (
                     <div className="avatar avatar-square">{c.name.slice(0, 2).toUpperCase()}</div>
                   )}
@@ -572,7 +572,7 @@ function AddFavoriteSeriesModal({
           {availableResults.slice(0, 8).map((s) => (
             <div className="user-row" key={s.id} onClick={() => handleAdd(s)}>
               {s.cover_url ? (
-                <img className="cover" style={{ width: 40, height: 56 }} src={s.cover_url} alt="" />
+                <img className="cover" style={{ width: 40, height: 56 }} src={s.cover_url} alt="" loading="lazy" />
               ) : (
                 <div className="cover" style={{ width: 40, height: 56 }}>
                   {s.title.slice(0, 2).toUpperCase()}

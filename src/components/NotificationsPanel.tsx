@@ -52,7 +52,7 @@ export default function NotificationsPanel({
           onClick={() => open(n)}
         >
           {n.actor.avatar_url ? (
-            <img className="avatar" src={n.actor.avatar_url} alt="" />
+            <img className="avatar" src={n.actor.avatar_url} alt="" loading="lazy" />
           ) : (
             <div className="avatar">{n.actor.username.slice(0, 2).toUpperCase()}</div>
           )}

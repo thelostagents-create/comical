@@ -106,7 +106,7 @@ export default function Library({
               </div>
             )}
             {row.series.cover_url ? (
-              <img className="cover" src={row.series.cover_url} alt="" />
+              <img className="cover" src={row.series.cover_url} alt="" loading="lazy" />
             ) : (
               <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
             )}
@@ -304,7 +304,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             {results.map((s) => (
               <div className="card series-row" key={s.id} onClick={() => pick(s)}>
                 {s.cover_url ? (
-                  <img className="cover" src={s.cover_url} alt="" />
+                  <img className="cover" src={s.cover_url} alt="" loading="lazy" />
                 ) : (
                   <div className="cover">{s.title.slice(0, 2).toUpperCase()}</div>
                 )}
@@ -363,7 +363,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             {visibleCvResults.map((v) => (
               <div className="card series-row" key={v.id} onClick={() => !cvImportingId && importFromComicVine(v)}>
                 {v.imageUrl ? (
-                  <img className="cover" src={v.imageUrl} alt="" />
+                  <img className="cover" src={v.imageUrl} alt="" loading="lazy" />
                 ) : (
                   <div className="cover">{v.name.slice(0, 2).toUpperCase()}</div>
                 )}

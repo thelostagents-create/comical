@@ -139,7 +139,7 @@ export default function Journal({
                 <Icon name="edit" size={11} />
               </button>
               {displayImage ? (
-                <img className="avatar" src={displayImage} alt="" />
+                <img className="avatar" src={displayImage} alt="" loading="lazy" />
               ) : (
                 <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
               )}
@@ -218,7 +218,7 @@ export default function Journal({
               }}
             >
               {row.series.cover_url ? (
-                <img className="cover" src={row.series.cover_url} alt="" />
+                <img className="cover" src={row.series.cover_url} alt="" loading="lazy" />
               ) : (
                 <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
               )}

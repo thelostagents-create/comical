@@ -237,7 +237,7 @@ export default function Fandom() {
         <div className="card post-card" key={post.id}>
           <div className="post-head">
             {post.profile.avatar_url ? (
-              <img className="avatar" src={post.profile.avatar_url} alt="" />
+              <img className="avatar" src={post.profile.avatar_url} alt="" loading="lazy" />
             ) : (
               <div className="avatar">{post.profile.username.slice(0, 2).toUpperCase()}</div>
             )}
@@ -299,7 +299,7 @@ export default function Fandom() {
               {repliesByPost[post.id]?.map((reply) => (
                 <div className="reply-item" key={reply.id}>
                   {reply.profile.avatar_url ? (
-                    <img className="avatar" src={reply.profile.avatar_url} alt="" />
+                    <img className="avatar" src={reply.profile.avatar_url} alt="" loading="lazy" />
                   ) : (
                     <div className="avatar">{reply.profile.username.slice(0, 2).toUpperCase()}</div>
                   )}
