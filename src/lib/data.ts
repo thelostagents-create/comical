@@ -1,5 +1,4 @@
 import { supabase } from "./supabase";
-import { matchingLibraryRows, publishersCompatible } from "./characterMatch";
 import type {
   Character,
   FandomPost,
@@ -21,6 +20,15 @@ import type {
 function db() {
   if (!supabase) throw new Error("Supabase is not configured.");
   return supabase;
+}
+
+// Used only to avoid creating a duplicate character row on import when an
+// existing (manually-added, not yet comicvine-linked) character shares a
+// name — an unset publisher on either side is treated as a wildcard.
+function publishersCompatible(a: string | undefined, b: string | undefined): boolean {
+  const pa = (a ?? "").trim().toLowerCase();
+  const pb = (b ?? "").trim().toLowerCase();
+  return !pa || !pb || pa === pb;
 }
 
 // ---------------------------------------------------------------------------
@@ -878,29 +886,21 @@ export async function fetchReadCharacterAppearances(userId: string): Promise<Cha
   );
 }
 
-// Every comic run (library row) featuring a character: real issue_characters
-// links where they exist, falling back to name/publisher matching only for
-// series that have no real link data at all.
+// Every comic run (library row) featuring a character, based only on real
+// issue_characters links for issues you've actually marked read.
 export async function fetchCharacterRuns(
   userId: string,
   character: Character,
   library: LibraryRow[],
 ): Promise<LibraryRow[]> {
   const appearances = await fetchReadCharacterAppearances(userId);
-  const exactSeriesIdsForCharacter = new Set(
-    appearances.filter((a) => a.characterId === character.id).map((a) => a.seriesId),
-  );
-  const exactCoveredSeriesIds = new Set(appearances.map((a) => a.seriesId));
+  const seriesIds = new Set(appearances.filter((a) => a.characterId === character.id).map((a) => a.seriesId));
+  return library.filter((row) => seriesIds.has(row.series_id) && row.readCount > 0);
+}
 
-  const exactRows = library.filter((row) => exactSeriesIdsForCharacter.has(row.series_id) && row.readCount > 0);
-  const heuristicRows = matchingLibraryRows(character, library).filter(
-    (row) => row.readCount > 0 && !exactCoveredSeriesIds.has(row.series_id),
-  );
-
-  const seen = new Set<string>();
-  return [...exactRows, ...heuristicRows].filter((row) => {
-    if (seen.has(row.id)) return false;
-    seen.add(row.id);
-    return true;
-  });
+export async function fetchCharactersByIds(ids: string[]): Promise<Character[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await db().from("characters").select("*").in("id", ids);
+  if (error) throw error;
+  return data ?? [];
 }

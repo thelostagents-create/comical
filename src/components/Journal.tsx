@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
-import { fetchLibrary, fetchMyBlurbs, fetchReadCharacterAppearances, profileStats, searchCharacters, type Blurb } from "../lib/data";
-import { publishersCompatible, titlesRelated } from "../lib/characterMatch";
+import { fetchCharactersByIds, fetchMyBlurbs, fetchReadCharacterAppearances, profileStats, type Blurb } from "../lib/data";
 import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
 import { timeAgo } from "../lib/format";
 import type { Character } from "../types";
@@ -21,16 +20,15 @@ export default function Journal({
   const [cover, setCover] = useState(getJournalCover());
   const [readCount, setReadCount] = useState(0);
   const [seriesCount, setSeriesCount] = useState(0);
-  const [topCharacters, setTopCharacters] = useState<(Character & { issuesRead: number; seriesTitle: string })[]>([]);
+  const [topCharacters, setTopCharacters] = useState<(Character & { issuesRead: number })[]>([]);
   const [blurbs, setBlurbs] = useState<Blurb[] | null>(null);
   const [showCoverModal, setShowCoverModal] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
     (async () => {
-      const [stats, library, myBlurbs, appearances] = await Promise.all([
+      const [stats, myBlurbs, appearances] = await Promise.all([
         profileStats(profile.id),
-        fetchLibrary(profile.id),
         fetchMyBlurbs(profile.id),
         fetchReadCharacterAppearances(profile.id),
       ]);
@@ -38,113 +36,16 @@ export default function Journal({
       setSeriesCount(stats.seriesCount);
       setBlurbs(myBlurbs);
 
-      const readRows = library.filter((row) => row.readCount > 0);
-      const seriesStatsById = new Map(
-        readRows.map((row) => [
-          row.series_id,
-          {
-            readCount: row.readCount,
-            title: row.series.title,
-            coverUrl: row.series.cover_url,
-            publisher: row.series.publisher,
-          },
-        ]),
-      );
-
-      // Real per-issue character data from a Comic Vine import beats
-      // guessing from titles — a series with any of it is never touched by
-      // the name-matching heuristic below, for itself or any other character.
-      const exactCoveredSeriesIds = new Set(appearances.map((a) => a.seriesId));
-      const exactStats = new Map<string, { issuesRead: number; seriesTitle: string }>();
+      // Only characters Comic Vine actually lists in an issue you've marked
+      // read — no more guessing a character's presence from series titles.
+      const issuesReadByCharacter = new Map<string, number>();
       for (const a of appearances) {
-        const cur = exactStats.get(a.characterId) ?? {
-          issuesRead: 0,
-          seriesTitle: seriesStatsById.get(a.seriesId)?.title ?? "",
-        };
-        cur.issuesRead += 1;
-        exactStats.set(a.characterId, cur);
+        issuesReadByCharacter.set(a.characterId, (issuesReadByCharacter.get(a.characterId) ?? 0) + 1);
       }
 
-      const claimedSeriesIds = new Set<string>(exactCoveredSeriesIds);
-      const allCharacters = await searchCharacters("");
-      const catalogChars = allCharacters
-        .map((c) => {
-          // Ground-truth issues (from a Comic Vine import) always count.
-          // Heuristic name-matching then fills in any *other* series that
-          // has no real link data at all, so a character isn't split
-          // between "the verified count" and "the guessed count."
-          const exact = exactStats.get(c.id);
-          let issuesRead = exact?.issuesRead ?? 0;
-          let seriesTitle = exact?.seriesTitle ?? "";
-
-          const linked =
-            c.series_id && !exactCoveredSeriesIds.has(c.series_id) ? seriesStatsById.get(c.series_id) : undefined;
-          if (linked && c.series_id) {
-            claimedSeriesIds.add(c.series_id);
-            issuesRead += linked.readCount;
-            seriesTitle = seriesTitle || linked.title;
-          }
-          for (const [seriesId, stat] of seriesStatsById) {
-            if (exactCoveredSeriesIds.has(seriesId)) continue;
-            if (seriesId === c.series_id) continue;
-            if (titlesRelated(c.name, stat.title) && publishersCompatible(c.publisher, stat.publisher)) {
-              issuesRead += stat.readCount;
-              seriesTitle = seriesTitle || stat.title;
-              claimedSeriesIds.add(seriesId);
-            }
-          }
-          return { ...c, issuesRead, seriesTitle };
-        })
-        .filter((c) => c.issuesRead > 0);
-
-      // Any read series with no matching character in the catalog still
-      // shows up here, standing in as its own "character" — so this section
-      // works with zero setup, no need to add characters by hand. Different
-      // books about the same character (e.g. two "Batman" series) merge into
-      // one entry instead of showing up separately — unless their publishers
-      // differ, e.g. a Marvel and a DC series that happen to share a name.
-      const unclaimed = [...seriesStatsById].filter(([seriesId]) => !claimedSeriesIds.has(seriesId));
-      const grouped = new Set<string>();
-      const impliedChars: (Character & { issuesRead: number; seriesTitle: string })[] = [];
-      for (const [seriesId, stat] of unclaimed) {
-        if (grouped.has(seriesId)) continue;
-        const cluster = [[seriesId, stat] as const];
-        grouped.add(seriesId);
-        let growing = true;
-        while (growing) {
-          growing = false;
-          for (const [otherId, otherStat] of unclaimed) {
-            if (grouped.has(otherId)) continue;
-            if (
-              cluster.some(
-                ([, s]) => titlesRelated(s.title, otherStat.title) && publishersCompatible(s.publisher, otherStat.publisher),
-              )
-            ) {
-              cluster.push([otherId, otherStat]);
-              grouped.add(otherId);
-              growing = true;
-            }
-          }
-        }
-        const repTitle = cluster.reduce((shortest, [, s]) => (s.title.length < shortest.length ? s.title : shortest), cluster[0][1].title);
-        const repCover = cluster.find(([, s]) => s.coverUrl)?.[1].coverUrl ?? null;
-        const repPublisher = cluster.find(([, s]) => s.publisher)?.[1].publisher ?? "";
-        impliedChars.push({
-          id: `series:${cluster[0][0]}`,
-          name: repTitle,
-          description: "",
-          image_url: repCover,
-          publisher: repPublisher,
-          comicvine_id: null,
-          series_id: cluster[0][0],
-          created_by: null,
-          created_at: "",
-          issuesRead: cluster.reduce((sum, [, s]) => sum + s.readCount, 0),
-          seriesTitle: repTitle,
-        });
-      }
-
-      const charsWithStats = [...catalogChars, ...impliedChars]
+      const characters = await fetchCharactersByIds([...issuesReadByCharacter.keys()]);
+      const charsWithStats = characters
+        .map((c) => ({ ...c, issuesRead: issuesReadByCharacter.get(c.id) ?? 0 }))
         .sort((a, b) => b.issuesRead - a.issuesRead)
         .slice(0, 6);
       setTopCharacters(charsWithStats);
