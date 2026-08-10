@@ -13,15 +13,26 @@ import RatingStars from "./RatingStars";
 // e.g. a character named "Batman" auto-matches series titled "Batman" or
 // "Batman: Year One", so most-read characters works with no hand-linking.
 // The same relation also merges different books about the same character
-// (e.g. two separate "Batman" books) into a single combined entry.
+// (e.g. two separate "Batman" books, or "Legion" and "Legion Of X") into a
+// single combined entry.
 function titleKey(title: string): string {
-  return title.trim().toLowerCase().split(/[:\-–—]/)[0].trim();
+  return title.trim().toLowerCase().split(/[:\-–—]|\bof\b/i)[0].trim();
 }
 
 function titlesRelated(a: string, b: string): boolean {
   const ka = titleKey(a);
   const kb = titleKey(b);
   return ka.length > 0 && ka === kb;
+}
+
+// Two same-named heroes from different publishers (e.g. Marvel's and DC's
+// takes on a name) should never be blended into one entry. An unset
+// publisher on either side is treated as a wildcard — only an explicit
+// mismatch blocks the match.
+function publishersCompatible(a: string | undefined, b: string | undefined): boolean {
+  const pa = (a ?? "").trim().toLowerCase();
+  const pb = (b ?? "").trim().toLowerCase();
+  return !pa || !pb || pa === pb;
 }
 
 export default function Journal({
@@ -55,7 +66,12 @@ export default function Journal({
       const seriesStatsById = new Map(
         readRows.map((row) => [
           row.series_id,
-          { readCount: row.readCount, title: row.series.title, coverUrl: row.series.cover_url },
+          {
+            readCount: row.readCount,
+            title: row.series.title,
+            coverUrl: row.series.cover_url,
+            publisher: row.series.publisher,
+          },
         ]),
       );
 
@@ -70,7 +86,7 @@ export default function Journal({
           let seriesTitle = linked ? linked.title : "";
           for (const [seriesId, stat] of seriesStatsById) {
             if (seriesId === c.series_id) continue;
-            if (titlesRelated(c.name, stat.title)) {
+            if (titlesRelated(c.name, stat.title) && publishersCompatible(c.publisher, stat.publisher)) {
               issuesRead += stat.readCount;
               seriesTitle = seriesTitle || stat.title;
               claimedSeriesIds.add(seriesId);
@@ -84,7 +100,8 @@ export default function Journal({
       // shows up here, standing in as its own "character" — so this section
       // works with zero setup, no need to add characters by hand. Different
       // books about the same character (e.g. two "Batman" series) merge into
-      // one entry instead of showing up separately.
+      // one entry instead of showing up separately — unless their publishers
+      // differ, e.g. a Marvel and a DC series that happen to share a name.
       const unclaimed = [...seriesStatsById].filter(([seriesId]) => !claimedSeriesIds.has(seriesId));
       const grouped = new Set<string>();
       const impliedChars: (Character & { issuesRead: number; seriesTitle: string })[] = [];
@@ -97,7 +114,11 @@ export default function Journal({
           growing = false;
           for (const [otherId, otherStat] of unclaimed) {
             if (grouped.has(otherId)) continue;
-            if (cluster.some(([, s]) => titlesRelated(s.title, otherStat.title))) {
+            if (
+              cluster.some(
+                ([, s]) => titlesRelated(s.title, otherStat.title) && publishersCompatible(s.publisher, otherStat.publisher),
+              )
+            ) {
               cluster.push([otherId, otherStat]);
               grouped.add(otherId);
               growing = true;
@@ -106,11 +127,13 @@ export default function Journal({
         }
         const repTitle = cluster.reduce((shortest, [, s]) => (s.title.length < shortest.length ? s.title : shortest), cluster[0][1].title);
         const repCover = cluster.find(([, s]) => s.coverUrl)?.[1].coverUrl ?? null;
+        const repPublisher = cluster.find(([, s]) => s.publisher)?.[1].publisher ?? "";
         impliedChars.push({
           id: `series:${cluster[0][0]}`,
           name: repTitle,
           description: "",
           image_url: repCover,
+          publisher: repPublisher,
           series_id: cluster[0][0],
           created_by: null,
           created_at: "",

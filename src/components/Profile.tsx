@@ -241,6 +241,7 @@ function AddFavoriteModal({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Character[]>([]);
   const [selected, setSelected] = useState<Character | null>(null);
+  const [publisher, setPublisher] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -265,6 +266,7 @@ function AddFavoriteModal({
           name: query.trim(),
           description: "",
           image_url: imageUrl.trim() || null,
+          publisher: publisher.trim(),
           series_id: null,
           created_by: profile.id,
         }));
@@ -316,10 +318,19 @@ function AddFavoriteModal({
                     <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
                   )}
                   <div className="name">{c.name}</div>
+                  {c.publisher && <span className="sub">{c.publisher}</span>}
                 </div>
               ))}
             </div>
           )}
+          <label className="field">
+            <span>Publisher / brand (optional)</span>
+            <input
+              value={publisher}
+              onChange={(e) => setPublisher(e.target.value)}
+              placeholder="Marvel, DC, Image…"
+            />
+          </label>
         </>
       )}
 

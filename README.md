@@ -22,7 +22,11 @@ readers to see their activity — a Goodreads-style tracker for comics.
 - **My Journal** — a pinned first tile in your Library with a custom cover
   image. Opens to your reading stats (issues read, series, most-read
   characters) and a running feed of every "blurb" (written review) you've
-  left on a series or issue.
+  left on a series or issue. Most-read characters matching is
+  publisher-aware — two same-named heroes from different publishers (e.g. a
+  Marvel and a DC character sharing a name) are never blended together —
+  and titles like "Legion" and "Legion Of X" are still recognized as the
+  same character.
 - **Fandom** — a tweet-style feed: post short updates with `#hashtags`,
   react to any post with 👍 ❤️ 😂 😮 😢, and search hashtags to jump
   straight to everything posted under one.
@@ -101,7 +105,9 @@ This app requires a Supabase project — there's no local/offline mode.
    `supabase/migrations/0002_characters_shows.sql` (`characters`, `shows`),
    then `supabase/migrations/0003_fandom_favorites_storage.sql` (Fandom
    posts/reactions/hashtags, favorite characters, and a public `images`
-   Storage bucket + policies so photos can be uploaded from the app).
+   Storage bucket + policies so photos can be uploaded from the app), then
+   `supabase/migrations/0004_character_publisher.sql` (adds a `publisher`
+   column to `characters`).
 3. Auth → Providers: **Email** should be enabled by default.
 4. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
    to pre-populate the catalog with 12 well-known series (Saga, Batman, The

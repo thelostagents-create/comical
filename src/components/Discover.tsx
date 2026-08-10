@@ -106,6 +106,7 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
                   <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
                 )}
                 <h3>{c.name}</h3>
+                {c.publisher && <div className="character-meta">{c.publisher}</div>}
               </div>
             ))}
           </div>
@@ -145,6 +146,7 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
 function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const { profile } = useAuth();
   const [name, setName] = useState("");
+  const [publisher, setPublisher] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -158,6 +160,11 @@ function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onC
     return () => clearTimeout(t);
   }, [seriesQuery, selectedSeries]);
 
+  function pickSeries(s: Series) {
+    setSelectedSeries(s);
+    if (!publisher.trim() && s.publisher) setPublisher(s.publisher);
+  }
+
   async function handleSubmit() {
     if (!profile || !name.trim()) return;
     setBusy(true);
@@ -165,6 +172,7 @@ function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onC
       name: name.trim(),
       description: description.trim(),
       image_url: imageUrl.trim() || null,
+      publisher: publisher.trim(),
       series_id: selectedSeries?.id ?? null,
       created_by: profile.id,
     });
@@ -177,6 +185,15 @@ function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onC
       <label className="field">
         <span>Name</span>
         <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      </label>
+
+      <label className="field">
+        <span>Publisher / brand (optional)</span>
+        <input
+          value={publisher}
+          onChange={(e) => setPublisher(e.target.value)}
+          placeholder="Marvel, DC, Image…"
+        />
       </label>
 
       <div className="field">
@@ -198,7 +215,7 @@ function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onC
             {seriesQuery.trim() && seriesResults.length > 0 && (
               <div className="card" style={{ marginTop: 8 }}>
                 {seriesResults.slice(0, 6).map((s) => (
-                  <div className="user-row" key={s.id} onClick={() => setSelectedSeries(s)}>
+                  <div className="user-row" key={s.id} onClick={() => pickSeries(s)}>
                     <div className="name">{s.title}</div>
                     <span className="sub">{s.publisher || "—"}</span>
                   </div>

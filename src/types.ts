@@ -67,6 +67,7 @@ export interface Character {
   name: string;
   description: string;
   image_url: string | null;
+  publisher: string;
   series_id: string | null;
   created_by: string | null;
   created_at: string;

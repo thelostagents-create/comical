@@ -93,6 +93,7 @@ export async function createCharacter(input: {
   name: string;
   description: string;
   image_url: string | null;
+  publisher: string;
   series_id: string | null;
   created_by: string;
 }): Promise<Character> {
