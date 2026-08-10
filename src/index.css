@@ -1167,7 +1167,7 @@ h3 {
 
 .journal-cover {
   position: relative;
-  width: 120px;
+  width: 150px;
   flex-shrink: 0;
   aspect-ratio: 2 / 3;
   border-radius: var(--radius);
@@ -1177,9 +1177,13 @@ h3 {
 .stats-row.journal-stats {
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  margin: 6px 0;
+  gap: 18px;
+  margin: 10px 0;
   padding-top: 2px;
+}
+
+.stats-row.journal-stats .stat b {
+  font-size: 24px;
 }
 
 .stats-row.journal-stats .stat {
