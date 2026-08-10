@@ -336,7 +336,17 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
               </div>
             ))}
             {query.trim() && results.length === 0 && (
-              <div className="empty">No matches in your catalog.</div>
+              <div className="empty">
+                No matches in your catalog.
+                <br />
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => { setStep("cvsearch"); setCvQuery(query); }}
+                >
+                  Import from Comic Vine
+                </button>
+              </div>
             )}
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
