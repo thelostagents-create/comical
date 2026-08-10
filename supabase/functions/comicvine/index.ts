@@ -42,6 +42,12 @@ interface CvIssueDetailRaw {
   character_credits?: { id: number; name: string }[];
 }
 
+interface CvCharacterRaw {
+  id: number;
+  name: string;
+  image?: { medium_url?: string; small_url?: string } | null;
+}
+
 function stripHtml(html: string): string {
   return html
     .replace(/<[^>]*>/g, " ")
@@ -160,7 +166,28 @@ Deno.serve(async (req) => {
       return json({ volume: mapVolume(v), issues });
     }
 
-    return json({ error: "unknown resource — expected 'search' or 'volume'" }, 400);
+    if (resource === "character") {
+      const id = url.searchParams.get("id")?.trim();
+      if (!id) return json({ error: "id is required" }, 400);
+
+      const characterUrl = new URL(`${COMICVINE_BASE}/character/4005-${id}/`);
+      characterUrl.searchParams.set("api_key", apiKey);
+      characterUrl.searchParams.set("format", "json");
+      characterUrl.searchParams.set("field_list", "id,name,image");
+
+      const data = await fetchComicVine(characterUrl);
+      const c = data.results as CvCharacterRaw | undefined;
+      if (!c) return json({ character: null });
+      return json({
+        character: {
+          id: String(c.id),
+          name: c.name ?? "",
+          imageUrl: c.image?.medium_url ?? c.image?.small_url ?? null,
+        },
+      });
+    }
+
+    return json({ error: "unknown resource — expected 'search', 'volume', or 'character'" }, 400);
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Comic Vine request failed" }, 502);
   }

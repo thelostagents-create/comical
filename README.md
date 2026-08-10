@@ -20,7 +20,8 @@ readers to see their activity — a Goodreads-style tracker for comics.
   the title, publisher, cover art, description, and its full issue list —
   plus, for every imported issue, the real characters Comic Vine says
   appear in it (`character_credits`), auto-creating/linking catalog
-  characters. Optional — requires the `comicvine` edge function (see below).
+  characters and pulling in a photo for any newly-created one. Optional —
+  requires the `comicvine` edge function (see below).
 - **My Journal** — a pinned first tile in your Library with a custom cover
   image. Opens to your reading stats (issues read, series, most-read
   characters) and a running feed of every "blurb" (written review) you've
@@ -147,11 +148,13 @@ and favorite-character runs will simply stay empty for them.
    ```
 3. That's it — no client-side env vars needed, the function URL is derived
    from your existing Supabase project URL. Comic Vine's free tier is rate
-   limited to 200 requests/hour. Character data only comes from each
-   issue's own detail endpoint (Comic Vine doesn't include it on bulk/list
-   endpoints), so a series import now costs roughly 1 + (1 per issue, up to
-   60) upstream requests instead of 1 — importing one ~30-issue run uses
-   about a sixth of the hourly budget.
+   limited to 200 requests/hour. Character data (and character photos) only
+   come from an issue's/character's own detail endpoint (Comic Vine doesn't
+   include either on bulk/list endpoints), so a series import now costs
+   roughly 1 (volume) + 1 per issue (up to 60) + 1 per *new* character
+   encountered — importing one ~30-issue run with ~10 new characters uses
+   about a fifth of the hourly budget. Characters already in your catalog
+   don't re-cost a request.
 
 ### Data model
 

@@ -137,14 +137,15 @@ export async function findOrCreateComicVineCharacter(input: {
   if (nameErr) throw nameErr;
   const existing = (nameMatches ?? []).find((c) => publishersCompatible(c.publisher, input.publisher));
   if (existing) {
-    // Best-effort: tag it with the comicvine_id so future imports find it
-    // directly. RLS only allows the creator to update it, so this silently
-    // no-ops for characters other users made — the name-match fallback
-    // above still finds it correctly next time.
+    // Best-effort: tag it with the comicvine_id (and a photo, if it's
+    // missing one) so future imports find it directly. RLS only allows the
+    // creator to update it, so this silently no-ops for characters other
+    // users made — the name-match fallback above still finds it next time.
     try {
+      const imageUrl = existing.image_url ?? (await getComicVineCharacter(input.comicvineId).catch(() => null))?.imageUrl ?? null;
       const { data: updated, error: updateErr } = await db()
         .from("characters")
-        .update({ comicvine_id: input.comicvineId, publisher: existing.publisher || input.publisher })
+        .update({ comicvine_id: input.comicvineId, publisher: existing.publisher || input.publisher, image_url: imageUrl })
         .eq("id", existing.id)
         .select()
         .single();
@@ -155,10 +156,11 @@ export async function findOrCreateComicVineCharacter(input: {
     }
   }
 
+  const cvCharacter = await getComicVineCharacter(input.comicvineId).catch(() => null);
   return createCharacter({
     name: input.name,
     description: "",
-    image_url: null,
+    image_url: cvCharacter?.imageUrl ?? null,
     publisher: input.publisher,
     comicvine_id: input.comicvineId,
     series_id: null,
@@ -654,6 +656,19 @@ export async function getComicVineVolume(
   id: string,
 ): Promise<{ volume: ComicVineVolume | null; issues: ComicVineIssue[] }> {
   return invokeComicVine(`resource=volume&id=${encodeURIComponent(id)}`);
+}
+
+export interface ComicVineCharacter {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+}
+
+export async function getComicVineCharacter(id: string): Promise<ComicVineCharacter | null> {
+  const { character } = await invokeComicVine<{ character: ComicVineCharacter | null }>(
+    `resource=character&id=${encodeURIComponent(id)}`,
+  );
+  return character;
 }
 
 // ---------------------------------------------------------------------------
