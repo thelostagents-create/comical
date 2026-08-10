@@ -9,6 +9,7 @@ import {
 } from "../lib/data";
 import type { Character, Series, Show } from "../types";
 import { Icon } from "./Icons";
+import ImageField from "./ImageField";
 import Modal from "./Modal";
 
 type Mode = "comics" | "characters" | "shows";
@@ -208,10 +209,7 @@ function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onC
         )}
       </div>
 
-      <label className="field">
-        <span>Image URL (optional)</span>
-        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" />
-      </label>
+      <ImageField label="Image (optional)" value={imageUrl} onChange={setImageUrl} folder="characters" />
       <label className="field">
         <span>Description</span>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
@@ -261,10 +259,7 @@ function CreateShowModal({ onClose, onCreated }: { onClose: () => void; onCreate
         <span>Network / platform</span>
         <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="Netflix, HBO, Disney+…" />
       </label>
-      <label className="field">
-        <span>Cover image URL (optional)</span>
-        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" />
-      </label>
+      <ImageField label="Cover image (optional)" value={imageUrl} onChange={setImageUrl} folder="shows" />
       <label className="field">
         <span>Description</span>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} />

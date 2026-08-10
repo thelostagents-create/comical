@@ -1,6 +1,9 @@
 import { supabase } from "./supabase";
 import type {
   Character,
+  FandomPost,
+  FandomReaction,
+  FavoriteCharacter,
   Follow,
   Issue,
   LibraryEntry,
@@ -9,6 +12,7 @@ import type {
   Rating,
   RatingTargetType,
   Read,
+  ReactionType,
   Series,
   Show,
 } from "../types";
@@ -573,4 +577,206 @@ export async function getComicVineVolume(
   id: string,
 ): Promise<{ volume: ComicVineVolume | null; issues: ComicVineIssue[] }> {
   return invokeComicVine(`resource=volume&id=${encodeURIComponent(id)}`);
+}
+
+// ---------------------------------------------------------------------------
+// fandom (tweet-style posts, reactions, hashtags)
+// ---------------------------------------------------------------------------
+
+const HASHTAG_RE = /#([a-z0-9_]+)/gi;
+
+function extractHashtags(body: string): string[] {
+  const tags = new Set<string>();
+  for (const match of body.matchAll(HASHTAG_RE)) tags.add(match[1].toLowerCase());
+  return [...tags];
+}
+
+export interface FandomPostRow extends FandomPost {
+  profile: Profile;
+  reactionCounts: Partial<Record<ReactionType, number>>;
+  myReactions: ReactionType[];
+  hashtags: string[];
+}
+
+async function hydratePosts(posts: FandomPost[], currentUserId: string): Promise<FandomPostRow[]> {
+  if (posts.length === 0) return [];
+  const postIds = posts.map((p) => p.id);
+  const userIds = [...new Set(posts.map((p) => p.user_id))];
+
+  const [
+    { data: profiles, error: profilesErr },
+    { data: reactions, error: reactionsErr },
+    { data: hashtags, error: hashtagsErr },
+  ] = await Promise.all([
+    db().from("profiles").select("*").in("id", userIds),
+    db().from("fandom_reactions").select("*").in("post_id", postIds),
+    db().from("fandom_post_hashtags").select("*").in("post_id", postIds),
+  ]);
+  if (profilesErr) throw profilesErr;
+  if (reactionsErr) throw reactionsErr;
+  if (hashtagsErr) throw hashtagsErr;
+
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  const reactionCountsByPost = new Map<string, Partial<Record<ReactionType, number>>>();
+  const myReactionsByPost = new Map<string, ReactionType[]>();
+  for (const r of (reactions ?? []) as FandomReaction[]) {
+    const counts = reactionCountsByPost.get(r.post_id) ?? {};
+    counts[r.reaction] = (counts[r.reaction] ?? 0) + 1;
+    reactionCountsByPost.set(r.post_id, counts);
+    if (r.user_id === currentUserId) {
+      const mine = myReactionsByPost.get(r.post_id) ?? [];
+      mine.push(r.reaction);
+      myReactionsByPost.set(r.post_id, mine);
+    }
+  }
+
+  const hashtagsByPost = new Map<string, string[]>();
+  for (const h of (hashtags ?? []) as { post_id: string; tag: string }[]) {
+    const tags = hashtagsByPost.get(h.post_id) ?? [];
+    tags.push(h.tag);
+    hashtagsByPost.set(h.post_id, tags);
+  }
+
+  return posts
+    .filter((p) => profileById.get(p.user_id))
+    .map((p) => ({
+      ...p,
+      profile: profileById.get(p.user_id)!,
+      reactionCounts: reactionCountsByPost.get(p.id) ?? {},
+      myReactions: myReactionsByPost.get(p.id) ?? [],
+      hashtags: hashtagsByPost.get(p.id) ?? [],
+    }));
+}
+
+export async function fetchFandomPosts(currentUserId: string, limit = 50): Promise<FandomPostRow[]> {
+  const { data: posts, error } = await db()
+    .from("fandom_posts")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return hydratePosts(posts ?? [], currentUserId);
+}
+
+export async function searchFandomPostsByHashtag(
+  tag: string,
+  currentUserId: string,
+  limit = 50,
+): Promise<FandomPostRow[]> {
+  const normalized = tag.trim().toLowerCase().replace(/^#/, "");
+  if (!normalized) return [];
+  const { data: matches, error } = await db()
+    .from("fandom_post_hashtags")
+    .select("post_id")
+    .eq("tag", normalized)
+    .limit(limit);
+  if (error) throw error;
+  const postIds = [...new Set((matches ?? []).map((m) => m.post_id))];
+  if (postIds.length === 0) return [];
+  const { data: posts, error: postsErr } = await db()
+    .from("fandom_posts")
+    .select("*")
+    .in("id", postIds)
+    .order("created_at", { ascending: false });
+  if (postsErr) throw postsErr;
+  return hydratePosts(posts ?? [], currentUserId);
+}
+
+export async function searchHashtags(query: string, limit = 12): Promise<{ tag: string; count: number }[]> {
+  const trimmed = query.trim().toLowerCase().replace(/^#/, "");
+  let q = db().from("fandom_post_hashtags").select("tag");
+  if (trimmed) q = q.ilike("tag", `${trimmed}%`);
+  const { data, error } = await q.limit(500);
+  if (error) throw error;
+  const counts = new Map<string, number>();
+  for (const row of (data ?? []) as { tag: string }[]) counts.set(row.tag, (counts.get(row.tag) ?? 0) + 1);
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+    .slice(0, limit);
+}
+
+export async function createFandomPost(input: {
+  user_id: string;
+  body: string;
+  image_url: string | null;
+}): Promise<FandomPost> {
+  const { data: post, error } = await db().from("fandom_posts").insert(input).select().single();
+  if (error) throw error;
+  const tags = extractHashtags(input.body);
+  if (tags.length > 0) {
+    const { error: tagErr } = await db()
+      .from("fandom_post_hashtags")
+      .insert(tags.map((tag) => ({ post_id: post.id, tag })));
+    if (tagErr) throw tagErr;
+  }
+  return post;
+}
+
+export async function deleteFandomPost(postId: string) {
+  const { error } = await db().from("fandom_posts").delete().eq("id", postId);
+  if (error) throw error;
+}
+
+export async function toggleReaction(
+  postId: string,
+  userId: string,
+  reaction: ReactionType,
+  currentlyActive: boolean,
+) {
+  if (currentlyActive) {
+    const { error } = await db()
+      .from("fandom_reactions")
+      .delete()
+      .eq("post_id", postId)
+      .eq("user_id", userId)
+      .eq("reaction", reaction);
+    if (error) throw error;
+  } else {
+    const { error } = await db()
+      .from("fandom_reactions")
+      .insert({ post_id: postId, user_id: userId, reaction });
+    if (error) throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// favorite characters (a user's showcase, shown on their profile)
+// ---------------------------------------------------------------------------
+
+export const MAX_FAVORITE_CHARACTERS = 9;
+
+export interface FavoriteCharacterRow extends FavoriteCharacter {
+  character: Character;
+}
+
+export async function fetchFavoriteCharacters(userId: string): Promise<FavoriteCharacterRow[]> {
+  const { data, error } = await db()
+    .from("favorite_characters")
+    .select("*, character:characters(*)")
+    .eq("user_id", userId)
+    .order("created_at")
+    .limit(MAX_FAVORITE_CHARACTERS);
+  if (error) throw error;
+  return (data ?? []) as unknown as FavoriteCharacterRow[];
+}
+
+export async function addFavoriteCharacter(input: {
+  user_id: string;
+  character_id: string;
+  image_url: string | null;
+}): Promise<FavoriteCharacterRow> {
+  const { data, error } = await db()
+    .from("favorite_characters")
+    .insert(input)
+    .select("*, character:characters(*)")
+    .single();
+  if (error) throw error;
+  return data as unknown as FavoriteCharacterRow;
+}
+
+export async function removeFavoriteCharacter(id: string) {
+  const { error } = await db().from("favorite_characters").delete().eq("id", id);
+  if (error) throw error;
 }

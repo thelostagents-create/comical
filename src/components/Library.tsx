@@ -16,6 +16,7 @@ import { getJournalCover } from "../lib/journalPrefs";
 import type { LibraryStatus, Series } from "../types";
 import { LIBRARY_STATUS_LABELS } from "../types";
 import { Icon } from "./Icons";
+import ImageField from "./ImageField";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
 import { Toast, useToast } from "./Toast";
@@ -347,10 +348,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             <span>Publisher</span>
             <input value={publisher} onChange={(e) => setPublisher(e.target.value)} placeholder="Image, Marvel, DC…" />
           </label>
-          <label className="field">
-            <span>Cover image URL (optional)</span>
-            <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://…" />
-          </label>
+          <ImageField label="Cover image (optional)" value={coverUrl} onChange={setCoverUrl} folder="series" />
           <label className="field">
             <span>Description</span>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} />

@@ -882,20 +882,148 @@ h3 {
 
 /* --------------------------------------------------------------- fandom */
 
-.fandom-empty {
+.composer {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 80px 24px;
-  color: var(--text-dim);
+  gap: 12px;
+}
+
+.post-card {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.fandom-empty h3 {
+.post-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.post-head-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.post-head-meta .name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.post-delete {
+  width: 30px;
+  height: 30px;
+}
+
+.post-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.hashtag {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.post-image {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.reaction-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.reaction-btn.active {
+  background: color-mix(in srgb, var(--accent) 20%, var(--card));
+  border-color: var(--accent);
   color: var(--text);
-  font-size: 18px;
-  margin: 6px 0 0;
+}
+
+.reaction-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* ----------------------------------------------------------- image field */
+
+.image-field-preview {
+  width: 100%;
+  max-width: 160px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.image-field-row {
+  display: flex;
+  gap: 8px;
+}
+
+.image-field-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.image-field-row button {
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------- favorite tile */
+
+.favorite-tile {
+  position: relative;
+}
+
+.favorite-tile-remove {
+  position: absolute;
+  top: -4px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.favorite-add-tile .avatar {
+  background: none;
+  border: 1.5px dashed var(--border);
+  color: var(--text-dim);
 }
 
 /* -------------------------------------------------------------- journal */

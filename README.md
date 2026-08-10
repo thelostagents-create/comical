@@ -23,10 +23,13 @@ readers to see their activity — a Goodreads-style tracker for comics.
   image. Opens to your reading stats (issues read, series, most-read
   characters) and a running feed of every "blurb" (written review) you've
   left on a series or issue.
-- **Fandom** — a placeholder tab reserved for future fandom hubs.
+- **Fandom** — a tweet-style feed: post short updates with `#hashtags` and
+  an optional photo, react to any post with 👍 ❤️ 😂 😮 😢, and search
+  hashtags to jump straight to everything posted under one.
+- **Favorite characters** — pick up to 9 favorite characters on your
+  profile, each with its own photo (search the catalog or type a new name).
 - **Social** — find and follow other readers from the Feed tab, browse
-  their public shelf and stats, and see what people you follow are reading
-  and rating.
+  their stats, and see what people you follow are reading and rating.
 - **Light/dark mode** — toggle from the top bar; dark is near-black, light
   is a warm beige/cream. Each mode remembers its own accent color.
 - **Custom accent color** — pick your own accent color (presets or a hex
@@ -60,7 +63,9 @@ src/
     supabase.ts         # Supabase client
     data.ts              # all reads/writes: series, issues, characters,
                           # shows, library, reads, ratings, follows, feed,
-                          # journal blurbs
+                          # journal blurbs, fandom posts/reactions/hashtags,
+                          # favorite characters
+    upload.ts             # uploads a File to Supabase Storage, returns its URL
     journalPrefs.ts       # journal cover image preference (localStorage)
     format.ts              # shared display helpers (timeAgo)
   App.tsx               # tab shell (Library / Fandom / Discover / Feed / Profile)
@@ -70,10 +75,11 @@ src/
     Journal.tsx           # pinned "My Journal" — stats, top characters, blurbs
     SeriesDetail.tsx      # series info, status, rating, issue list + add issue
     Discover.tsx          # browse Comics / Characters / Shows
-    Fandom.tsx             # placeholder tab
+    Fandom.tsx             # tweet-style posts, reactions, hashtag search
     Feed.tsx                # activity from people you follow + find friends
-    Profile.tsx              # your or someone else's profile, stats, shelf
+    Profile.tsx              # your or someone else's profile, favorite characters
     AccentPicker.tsx          # accent color picker modal
+    ImageField.tsx             # image input: paste a URL or import a photo
     RatingStars.tsx, Modal.tsx, Icons.tsx, Toast.tsx   # shared UI
 supabase/
   migrations/            # schema (run in order in the SQL editor)
@@ -92,7 +98,10 @@ This app requires a Supabase project — there's no local/offline mode.
    `supabase/migrations/0001_init.sql` (schema: `profiles`, `series`,
    `issues`, `library_entries`, `reads`, `ratings`, `follows`, row-level
    security, and a trigger that auto-creates a profile row on sign-up), then
-   `supabase/migrations/0002_characters_shows.sql` (`characters`, `shows`).
+   `supabase/migrations/0002_characters_shows.sql` (`characters`, `shows`),
+   then `supabase/migrations/0003_fandom_favorites_storage.sql` (Fandom
+   posts/reactions/hashtags, favorite characters, and a public `images`
+   Storage bucket + policies so photos can be uploaded from the app).
 3. Auth → Providers: **Email** should be enabled by default.
 4. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
    to pre-populate the catalog with 12 well-known series (Saga, Batman, The
@@ -135,11 +144,18 @@ the app works exactly the same — you'll just add series by hand or from
   writes to the owning user.
 - `follows` is a simple `follower_id -> followee_id` edge table that drives
   the Feed.
+- `fandom_posts` are public tweet-style posts; `fandom_post_hashtags` are
+  the `#tags` parsed out of a post's body (used for hashtag search);
+  `fandom_reactions` is one row per user/post/reaction-type (👍 ❤️ 😂 😮 😢).
+- `favorite_characters` links a user to a character on their profile, with
+  its own optional `image_url` so a favorite can have a different photo
+  than the shared catalog entry. Capped at 9 per user.
 
 ## Notes
 
-- Series/issue/character/show images (`cover_url` / `image_url`) are
-  accepted as plain URLs; there's no image upload/storage wired up yet —
-  entries without one show a letter-tile placeholder instead.
+- Every image field (series/character/show/journal covers, Fandom post
+  photos, favorite-character photos) accepts either a pasted URL or an
+  uploaded file — uploads go to a public `images` bucket in Supabase
+  Storage (see migration `0003`).
 - The accent color is a client-side preference (`localStorage`), not synced
   across devices.

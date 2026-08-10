@@ -5,6 +5,7 @@ import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
 import { timeAgo } from "../lib/format";
 import type { Character } from "../types";
 import { Icon } from "./Icons";
+import ImageField from "./ImageField";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
 
@@ -236,10 +237,7 @@ function CoverModal({
   const [url, setUrl] = useState(initial);
   return (
     <Modal title="Journal cover" onClose={onClose}>
-      <label className="field">
-        <span>Image URL</span>
-        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" autoFocus />
-      </label>
+      <ImageField label="Cover image" value={url} onChange={setUrl} folder="journal" />
       <div className="modal-actions">
         <button className="btn-secondary" onClick={onClose}>
           Cancel

@@ -89,3 +89,39 @@ export const LIBRARY_STATUS_LABELS: Record<LibraryStatus, string> = {
   plan_to_read: "Plan to Read",
   dropped: "Dropped",
 };
+
+export type ReactionType = "thumbs_up" | "heart" | "laugh" | "wow" | "sad";
+
+export const REACTION_TYPES: ReactionType[] = ["thumbs_up", "heart", "laugh", "wow", "sad"];
+
+export const REACTION_EMOJI: Record<ReactionType, string> = {
+  thumbs_up: "👍",
+  heart: "❤️",
+  laugh: "😂",
+  wow: "😮",
+  sad: "😢",
+};
+
+export interface FandomPost {
+  id: string;
+  user_id: string;
+  body: string;
+  image_url: string | null;
+  created_at: string;
+}
+
+export interface FandomReaction {
+  id: string;
+  post_id: string;
+  user_id: string;
+  reaction: ReactionType;
+  created_at: string;
+}
+
+export interface FavoriteCharacter {
+  id: string;
+  user_id: string;
+  character_id: string;
+  image_url: string | null;
+  created_at: string;
+}
