@@ -13,7 +13,6 @@
   --text-dim: #8c8c92;
   --accent: #5b8def;
   --accent-ink: #040404;
-  --stamp: #e0a758;
   --danger: #ff6b6b;
   --radius: 18px;
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
@@ -34,7 +33,6 @@
   --overlay-strong: rgba(90, 62, 40, 0.16);
   --text: #3a2e26;
   --text-dim: #8a7968;
-  --stamp: #d98c4a;
   --danger: #d94f4f;
   --shadow: 0 10px 26px rgba(90, 62, 40, 0.14);
   color-scheme: light;
@@ -328,9 +326,9 @@ h3 {
 }
 
 .star-toggle.starred {
-  background: rgba(224, 167, 88, 0.14);
-  border-color: var(--stamp);
-  color: var(--stamp);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ---------------------------------------------------------------- misc */
@@ -874,9 +872,9 @@ h3 {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  border: 1.3px dashed var(--stamp);
-  color: var(--stamp);
-  background: rgba(4, 4, 4, 0.75);
+  border: 1.3px dashed var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: blur(4px);
   transform: rotate(-8deg);
   text-align: center;
@@ -897,9 +895,9 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(4, 4, 4, 0.75);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: blur(4px);
-  color: var(--stamp);
+  color: var(--accent);
 }
 
 /* --------------------------------------------------------------- toast */
