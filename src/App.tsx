@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./auth";
 import AuthGate from "./components/AuthGate";
 import Library from "./components/Library";
@@ -9,7 +9,9 @@ import Profile from "./components/Profile";
 import SeriesDetail from "./components/SeriesDetail";
 import Journal from "./components/Journal";
 import AccentPicker from "./components/AccentPicker";
+import NotificationsPanel from "./components/NotificationsPanel";
 import { Icon } from "./components/Icons";
+import { fetchUnreadNotificationCount } from "./lib/data";
 import { getThemeMode, setThemeMode, type ThemeMode } from "./theme";
 
 export type View =
@@ -25,7 +27,14 @@ function Shell() {
   const { profile, signOut } = useAuth();
   const [view, setView] = useState<View>({ tab: "library" });
   const [showAccentPicker, setShowAccentPicker] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [mode, setMode] = useState<ThemeMode>(getThemeMode());
+
+  useEffect(() => {
+    if (!profile) return;
+    fetchUnreadNotificationCount(profile.id).then(setUnreadCount);
+  }, [profile]);
 
   function toggleMode() {
     const next = mode === "dark" ? "light" : "dark";
@@ -82,6 +91,16 @@ function Shell() {
       <header className="topbar">
         <span className="brand">Comical</span>
         <div className="topbar-actions">
+          <button
+            className="icon-btn notification-bell"
+            onClick={() => setShowNotifications(true)}
+            aria-label="Notifications"
+          >
+            <Icon name="bell" size={17} />
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
+            )}
+          </button>
           <button className="icon-btn" onClick={toggleMode} aria-label="Toggle light/dark mode">
             <Icon name={mode === "dark" ? "sun" : "moon"} size={17} />
           </button>
@@ -122,6 +141,17 @@ function Shell() {
       </nav>
 
       {showAccentPicker && <AccentPicker onClose={() => setShowAccentPicker(false)} />}
+
+      {showNotifications && (
+        <NotificationsPanel
+          onClose={() => {
+            setShowNotifications(false);
+            setUnreadCount(0);
+          }}
+          onOpenProfile={(userId) => openProfile(userId)}
+          onOpenFandom={() => setView({ tab: "fandom" })}
+        />
+      )}
     </div>
   );
 }

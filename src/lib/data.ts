@@ -526,6 +526,7 @@ export async function follow(followerId: string, followeeId: string) {
     .from("follows")
     .insert({ follower_id: followerId, followee_id: followeeId });
   if (error) throw error;
+  await createNotification(followeeId, followerId, "follow", null);
 }
 
 export async function unfollow(followerId: string, followeeId: string) {
@@ -933,9 +934,12 @@ export async function createFandomReply(input: {
   post_id: string;
   user_id: string;
   body: string;
+  postOwnerId: string;
 }): Promise<FandomReply> {
-  const { data, error } = await db().from("fandom_replies").insert(input).select().single();
+  const { postOwnerId, ...row } = input;
+  const { data, error } = await db().from("fandom_replies").insert(row).select().single();
   if (error) throw error;
+  await createNotification(postOwnerId, input.user_id, "reply", input.post_id);
   return data;
 }
 
@@ -949,6 +953,7 @@ export async function toggleReaction(
   userId: string,
   reaction: ReactionType,
   currentlyActive: boolean,
+  postOwnerId: string,
 ) {
   if (currentlyActive) {
     const { error } = await db()
@@ -963,6 +968,7 @@ export async function toggleReaction(
       .from("fandom_reactions")
       .insert({ post_id: postId, user_id: userId, reaction });
     if (error) throw error;
+    await createNotification(postOwnerId, userId, "reaction", postId);
   }
 }
 
@@ -1051,4 +1057,70 @@ export async function fetchCharactersByIds(ids: string[]): Promise<Character[]> 
   const { data, error } = await db().from("characters").select("*").in("id", ids);
   if (error) throw error;
   return data ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// notifications
+// ---------------------------------------------------------------------------
+
+export type NotificationType = "reaction" | "reply" | "follow";
+
+export interface NotificationRow {
+  id: string;
+  type: NotificationType;
+  post_id: string | null;
+  read: boolean;
+  created_at: string;
+  actor: Profile;
+}
+
+// Never notifies yourself (e.g. reacting to your own post) — silently a
+// no-op in that case rather than an error, since callers don't need to
+// special-case it themselves.
+async function createNotification(
+  recipientId: string,
+  actorId: string,
+  type: NotificationType,
+  postId: string | null,
+) {
+  if (recipientId === actorId) return;
+  const { error } = await db()
+    .from("notifications")
+    .insert({ recipient_id: recipientId, actor_id: actorId, type, post_id: postId });
+  if (error) throw error;
+}
+
+export async function fetchNotifications(userId: string, limit = 30): Promise<NotificationRow[]> {
+  const { data, error } = await db()
+    .from("notifications")
+    .select("*")
+    .eq("recipient_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  const rows = data ?? [];
+  const actorIds = [...new Set(rows.map((r) => r.actor_id))];
+  const { data: actors, error: actorsErr } =
+    actorIds.length > 0
+      ? await db().from("profiles").select("*").in("id", actorIds)
+      : { data: [] as Profile[], error: null };
+  if (actorsErr) throw actorsErr;
+  const actorById = new Map((actors ?? []).map((a) => [a.id, a]));
+  return rows.filter((r) => actorById.get(r.actor_id)).map((r) => ({ ...r, actor: actorById.get(r.actor_id)! }));
+}
+
+export async function fetchUnreadNotificationCount(userId: string): Promise<number> {
+  const { count, error } = await db()
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", userId)
+    .eq("read", false);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function markNotificationsRead(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await db().from("notifications").update({ read: true }).in("id", ids);
+  if (error) throw error;
 }

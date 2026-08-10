@@ -110,7 +110,7 @@ export default function Fandom() {
         ) ?? null,
     );
     try {
-      await toggleReaction(post.id, profile.id, reaction, active);
+      await toggleReaction(post.id, profile.id, reaction, active, post.user_id);
     } catch {
       reload();
     }
@@ -131,10 +131,11 @@ export default function Fandom() {
 
   async function handleReplySubmit(postId: string) {
     const text = (replyDrafts[postId] ?? "").trim();
-    if (!profile || !text) return;
+    const postOwnerId = posts?.find((p) => p.id === postId)?.user_id;
+    if (!profile || !text || !postOwnerId) return;
     setPostingReplyFor(postId);
     try {
-      const reply = await createFandomReply({ post_id: postId, user_id: profile.id, body: text });
+      const reply = await createFandomReply({ post_id: postId, user_id: profile.id, body: text, postOwnerId });
       setRepliesByPost((prev) => ({
         ...prev,
         [postId]: [...(prev[postId] ?? []), { ...reply, profile }],

@@ -14,10 +14,13 @@ interface AuthContextValue {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  passwordRecovery: boolean;
   signUp: (email: string, password: string, username: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<string | null>;
+  updatePassword: (newPassword: string) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -26,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   const loadProfile = useCallback(async (userId: string) => {
     if (!supabase) return;
@@ -47,7 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.session) loadProfile(data.session.user.id);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
       setSession(next);
       if (next) {
         loadProfile(next.user.id);
@@ -94,9 +99,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session) await loadProfile(session.user.id);
   }, [session, loadProfile]);
 
+  const requestPasswordReset = useCallback(async (email: string) => {
+    if (!supabase) return "Supabase is not configured.";
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + import.meta.env.BASE_URL,
+    });
+    return error ? error.message : null;
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    if (!supabase) return "Supabase is not configured.";
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (!error) setPasswordRecovery(false);
+    return error ? error.message : null;
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ session, profile, loading, signUp, signIn, signOut, refreshProfile }}
+      value={{
+        session,
+        profile,
+        loading,
+        passwordRecovery,
+        signUp,
+        signIn,
+        signOut,
+        refreshProfile,
+        requestPasswordReset,
+        updatePassword,
+      }}
     >
       {children}
     </AuthContext.Provider>

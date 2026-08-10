@@ -16,7 +16,8 @@ type IconName =
   | "edit"
   | "close"
   | "image"
-  | "reply";
+  | "reply"
+  | "bell";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = {
@@ -165,6 +166,13 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
         <svg {...common}>
           <rect x="3.5" y="5" width="17" height="12" rx="3" />
           <path d="M8 17v3.2L12.5 17" />
+        </svg>
+      );
+    case "bell":
+      return (
+        <svg {...common}>
+          <path d="M6 10.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14.5 6 10.5Z" />
+          <path d="M10.3 19.5a1.8 1.8 0 0 0 3.4 0" />
         </svg>
       );
   }

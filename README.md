@@ -11,7 +11,9 @@ readers to see their activity — a Goodreads-style tracker for comics.
   Read / Reading / Completed / Dropped), mark individual issues read/unread,
   see per-series progress, and rate + leave a note right when you add a
   comic. Star a series (from its detail page) to pin it to the top of your
-  library, marked with a small star badge on its tile.
+  library, marked with a small star badge on its tile. "Add a comic" opens
+  showing just the 6 most recently added catalog series — type to search
+  the whole catalog.
 - **Ratings & reviews** — 1-5 star ratings with an optional written review,
   on series or individual issues.
 - **Discover** — browse the catalog across three categories: Comics,
@@ -37,10 +39,16 @@ readers to see their activity — a Goodreads-style tracker for comics.
   left on a series or issue. Most-read characters is based only on real
   Comic Vine character data (`character_credits`) for issues you've marked
   read — a character only shows up if Comic Vine actually lists them in
-  something you've read, no guessing from series titles.
+  something you've read, no guessing from series titles. Tap one to see
+  every comic run you've read featuring them.
 - **Fandom** — a tweet-style feed: post short updates with `#hashtags`,
-  react to any post with 👍 ❤️ 😂 😮 😢, reply to a post, and search
-  hashtags to jump straight to everything posted under one.
+  react to any post with 👍 ❤️ 😂 😮 😢, reply to a post (replies are
+  collapsible), and search hashtags to jump straight to everything posted
+  under one.
+- **Notifications** — a bell icon in the top bar with an unread badge.
+  You're notified when someone reacts to or replies to your Fandom post, or
+  follows you (never for your own actions on your own stuff). Tap the bell
+  to see recent activity and jump to it; opening the list marks it read.
 - **Favorite characters** — pick up to 9 favorite characters on your
   profile, each with its own photo (search the catalog or type a new name).
   Tap one to see every comic run you've read that features them, based on
@@ -53,7 +61,7 @@ readers to see their activity — a Goodreads-style tracker for comics.
   code) from the palette icon in the top bar; it's stored per-device, per
   mode (dark defaults to blue, light defaults to a cotton-candy pink).
 - **Accounts** — real email/password auth via Supabase, with a unique
-  username per user.
+  username per user and a "Forgot password?" email-reset flow.
 
 ## Run it
 
@@ -126,16 +134,24 @@ This app requires a Supabase project — there's no local/offline mode.
    character data from Comic Vine imports), then
    `supabase/migrations/0006_fandom_replies.sql` (adds `fandom_replies`), then
    `supabase/migrations/0007_library_starred.sql` (adds a `starred` column to
-   `library_entries`, letting you pin a series to the top of your library).
+   `library_entries`, letting you pin a series to the top of your library),
+   then `supabase/migrations/0008_notifications.sql` (adds `notifications`,
+   for the reaction/reply/follow bell).
 3. Auth → Providers: **Email** should be enabled by default.
-4. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
+4. For the "Forgot password?" flow to work: Authentication → URL
+   Configuration → **Redirect URLs**, add the URL the app is served from
+   (e.g. `https://<your-username>.github.io/comical/` for the GitHub Pages
+   deploy, or `http://localhost:5173/` for local dev). Without this, the
+   reset-password email link won't be allowed to send the user back into
+   the app.
+5. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
    to pre-populate the catalog with 12 well-known series (Saga, Batman, The
    Sandman, Watchmen, Ms. Marvel, Chainsaw Man, Invincible, and more), each
    with a run of issues already logged. Skip this if you'd rather start
    from an empty catalog and add everything yourself.
-5. Copy `.env.example` to `.env.local` and fill in your **Project URL** and
+6. Copy `.env.example` to `.env.local` and fill in your **Project URL** and
    **anon key** (Project Settings → API).
-6. `npm run dev`.
+7. `npm run dev`.
 
 ### Comic Vine search (optional)
 
