@@ -9,6 +9,15 @@
 const COMICVINE_BASE = "https://comicvine.gamespot.com/api";
 const USER_AGENT = "Comical/1.0 (+https://github.com/thelostagents-create/comical)";
 
+// Comic Vine's bulk list endpoints (volume detail's `issues` field, or the
+// `/issues/` list filtered by volume) never return `character_credits` —
+// that field only comes back from a single issue's own detail endpoint. So
+// character data costs one extra upstream request per issue; this caps how
+// many of a volume's issues we pay that cost for, matching the client's own
+// import cap (MAX_IMPORTED_ISSUES in Library.tsx).
+const MAX_ISSUES_WITH_CHARACTERS = 60;
+const ISSUE_DETAIL_BATCH_SIZE = 10;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -23,9 +32,10 @@ interface CvVolumeRaw {
   start_year?: string | null;
   count_of_issues?: number | null;
   description?: string | null;
+  issues?: { id: number; issue_number: string; name: string | null }[];
 }
 
-interface CvIssueRaw {
+interface CvIssueDetailRaw {
   id: number;
   issue_number: string;
   name: string | null;
@@ -108,35 +118,44 @@ Deno.serve(async (req) => {
       volumeUrl.searchParams.set("format", "json");
       volumeUrl.searchParams.set(
         "field_list",
-        "id,name,publisher,image,start_year,count_of_issues,description",
+        "id,name,publisher,image,start_year,count_of_issues,description,issues",
       );
 
-      // Fetched separately from a lightweight `issues` field on the volume
-      // (which Comic Vine doesn't attach character_credits to) — the
-      // `/issues/` list filtered by volume gives us character_credits per
-      // issue, which is the real "who appears in this book" data.
-      const issuesUrl = new URL(`${COMICVINE_BASE}/issues/`);
-      issuesUrl.searchParams.set("api_key", apiKey);
-      issuesUrl.searchParams.set("format", "json");
-      issuesUrl.searchParams.set("filter", `volume:${id}`);
-      issuesUrl.searchParams.set("field_list", "id,issue_number,name,character_credits");
-      issuesUrl.searchParams.set("limit", "100");
-      issuesUrl.searchParams.set("sort", "issue_number:asc");
-
-      const [volumeData, issuesData] = await Promise.all([
-        fetchComicVine(volumeUrl),
-        fetchComicVine(issuesUrl),
-      ]);
-
+      const volumeData = await fetchComicVine(volumeUrl);
       const v = volumeData.results as CvVolumeRaw | undefined;
-      const issues = ((issuesData.results ?? []) as CvIssueRaw[])
-        .map((i) => ({
-          id: String(i.id),
-          issueNumber: i.issue_number,
-          title: i.name ?? "",
-          characters: (i.character_credits ?? []).map((c) => ({ comicvineId: String(c.id), name: c.name })),
-        }))
-        .sort((a, b) => parseFloat(a.issueNumber) - parseFloat(b.issueNumber));
+
+      const issueRefs = (v?.issues ?? [])
+        .map((i) => ({ id: i.id, issueNumber: i.issue_number, title: i.name ?? "" }))
+        .sort((a, b) => parseFloat(a.issueNumber) - parseFloat(b.issueNumber))
+        .slice(0, MAX_ISSUES_WITH_CHARACTERS);
+
+      const issues: { id: string; issueNumber: string; title: string; characters: { comicvineId: string; name: string }[] }[] = [];
+      for (let i = 0; i < issueRefs.length; i += ISSUE_DETAIL_BATCH_SIZE) {
+        const batch = issueRefs.slice(i, i + ISSUE_DETAIL_BATCH_SIZE);
+        const detailed = await Promise.all(
+          batch.map(async (ref) => {
+            try {
+              const issueUrl = new URL(`${COMICVINE_BASE}/issue/4000-${ref.id}/`);
+              issueUrl.searchParams.set("api_key", apiKey);
+              issueUrl.searchParams.set("format", "json");
+              issueUrl.searchParams.set("field_list", "id,issue_number,name,character_credits");
+              const data = await fetchComicVine(issueUrl);
+              const detail = data.results as CvIssueDetailRaw | undefined;
+              return {
+                id: String(ref.id),
+                issueNumber: ref.issueNumber,
+                title: ref.title,
+                characters: (detail?.character_credits ?? []).map((c) => ({ comicvineId: String(c.id), name: c.name })),
+              };
+            } catch {
+              // A single issue's detail lookup failing shouldn't sink the
+              // whole import — it just imports with no character data.
+              return { id: String(ref.id), issueNumber: ref.issueNumber, title: ref.title, characters: [] };
+            }
+          }),
+        );
+        issues.push(...detailed);
+      }
 
       return json({ volume: mapVolume(v), issues });
     }

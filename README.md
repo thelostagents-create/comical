@@ -147,9 +147,11 @@ and favorite-character runs will simply stay empty for them.
    ```
 3. That's it — no client-side env vars needed, the function URL is derived
    from your existing Supabase project URL. Comic Vine's free tier is rate
-   limited to 200 requests/hour; each series import now makes 2 upstream
-   Comic Vine requests (volume metadata + issues with character credits)
-   instead of 1.
+   limited to 200 requests/hour. Character data only comes from each
+   issue's own detail endpoint (Comic Vine doesn't include it on bulk/list
+   endpoints), so a series import now costs roughly 1 + (1 per issue, up to
+   60) upstream requests instead of 1 — importing one ~30-issue run uses
+   about a sixth of the hourly budget.
 
 ### Data model
 
