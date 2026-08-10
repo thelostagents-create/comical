@@ -127,7 +127,7 @@ export default function Profile({
           <h2>{target.username}</h2>
           <div className="sub">@{target.username}</div>
           {target.fandoms.trim() && <div className="profile-fandoms">fandoms : {target.fandoms}</div>}
-          {target.bio && <div className="sub" style={{ marginTop: 8 }}>{target.bio}</div>}
+          {target.bio && <div className="sub" style={{ marginTop: 5 }}>{target.bio}</div>}
         </div>
       </div>
 
