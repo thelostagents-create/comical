@@ -106,6 +106,18 @@ npm run build    # type-check + production build
 npm run preview  # preview the production build
 ```
 
+## Deployment
+
+Live at **https://comical.pics**. `.github/workflows/deploy.yml` builds and
+publishes `dist/` to GitHub Pages automatically on every push to `main` — no
+manual deploy step. The custom domain is wired up two ways: `public/CNAME`
+(copied into every build, tells GitHub Pages which domain to serve) and DNS
+records at the domain's registrar pointing at GitHub Pages' servers — four
+`A` records (`185.199.108.153`, `.109.153`, `.110.153`, `.111.153`) since
+`comical.pics` is an apex domain, not a subdomain. The repo's Settings →
+Pages also needs "Custom domain" set to `comical.pics` with "Enforce HTTPS"
+enabled once DNS has propagated (can take up to a day, usually much less).
+
 ## Project structure
 
 ```
@@ -184,10 +196,9 @@ This app requires a Supabase project — there's no local/offline mode.
 4. Auth → Providers: **Email** should be enabled by default.
 5. For the "Forgot password?" flow to work: Authentication → URL
    Configuration → **Redirect URLs**, add the URL the app is served from
-   (e.g. `https://<your-username>.github.io/comical/` for the GitHub Pages
-   deploy, or `http://localhost:5173/` for local dev). Without this, the
-   reset-password email link won't be allowed to send the user back into
-   the app.
+   (`https://comical.pics/` in production, or `http://localhost:5173/` for
+   local dev). Without this, the reset-password email link won't be
+   allowed to send the user back into the app.
 6. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
    to pre-populate the catalog with 12 well-known series (Saga, Batman, The
    Sandman, Watchmen, Ms. Marvel, Chainsaw Man, Invincible, and more), each
