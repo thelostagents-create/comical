@@ -16,11 +16,13 @@ readers to see their activity — a Goodreads-style tracker for comics.
 - **Discover** — browse the catalog across three categories: Comics,
   Characters, and Shows.
 - **Comic Vine search** — when adding a comic, search Comic Vine's real
-  database instead of typing everything by hand; picking a result imports
-  the title, publisher, cover art, description, and its full issue list —
-  plus, for every imported issue, the real characters Comic Vine says
-  appear in it (`character_credits`), auto-creating/linking catalog
-  characters and pulling in a photo for any newly-created one. Optional —
+  database instead of typing everything by hand, with an optional year
+  filter for when a title has multiple runs (e.g. several different
+  "Batman" volumes across decades); picking a result imports the title,
+  publisher, cover art, description, and its full issue list — plus, for
+  every imported issue, the real characters Comic Vine says appear in it
+  (`character_credits`), auto-creating/linking catalog characters and
+  pulling in a photo for any newly-created one. Optional —
   requires the `comicvine` edge function (see below).
 - **My Journal** — a pinned first tile in your Library with a custom cover
   image. Opens to your reading stats (issues read, series, most-read
@@ -151,11 +153,14 @@ and favorite-character runs will simply stay empty for them.
    from your existing Supabase project URL. Comic Vine's free tier is rate
    limited to 200 requests/hour. Character data (and character photos) only
    come from an issue's/character's own detail endpoint (Comic Vine doesn't
-   include either on bulk/list endpoints), so a series import now costs
-   roughly 1 (volume) + 1 per issue (up to 60) + 1 per *new* character
-   encountered — importing one ~30-issue run with ~10 new characters uses
-   about a fifth of the hourly budget. Characters already in your catalog
-   don't re-cost a request.
+   include either on bulk/list endpoints), so a series import costs roughly
+   1 (volume) + 1 per issue (capped at 25, regardless of how many issues the
+   series actually has) + 1 per *new* character encountered (capped at 15
+   per import) — at most about 40 requests, a fifth of the hourly budget,
+   paced in small batches with a delay between them rather than fired all at
+   once. Characters already in your catalog don't re-cost a request, and
+   issues beyond the 25-issue cap still import fine, just without character
+   data.
 
 ### Data model
 

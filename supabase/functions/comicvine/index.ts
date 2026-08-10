@@ -12,12 +12,14 @@ const USER_AGENT = "Comical/1.0 (+https://github.com/thelostagents-create/comica
 // Comic Vine's bulk list endpoints (volume detail's `issues` field, or the
 // `/issues/` list filtered by volume) never return `character_credits` —
 // that field only comes back from a single issue's own detail endpoint. So
-// character data costs one extra upstream request per issue; this caps how
-// many of a volume's issues we pay that cost for, matching the client's own
-// import cap (MAX_IMPORTED_ISSUES in Library.tsx).
-const MAX_ISSUES_WITH_CHARACTERS = 60;
-const ISSUE_DETAIL_BATCH_SIZE = 4;
-const BATCH_DELAY_MS = 300;
+// character data costs one extra upstream request per issue, on top of the
+// 200-requests/hour free-tier budget. Kept deliberately well under the
+// client's own MAX_IMPORTED_ISSUES (60) so one import can't eat most of an
+// hour's quota by itself, and paced gently (small concurrent batches, a
+// delay between them) instead of firing everything at once.
+const MAX_ISSUES_WITH_CHARACTERS = 25;
+const ISSUE_DETAIL_BATCH_SIZE = 3;
+const BATCH_DELAY_MS = 500;
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

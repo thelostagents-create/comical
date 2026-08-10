@@ -115,20 +115,24 @@ export async function createCharacter(input: {
 
 // Finds the character Comic Vine says this is (by comicvine_id, falling
 // back to a same-name/compatible-publisher match for characters added
-// before this linking existed), or creates a new one.
+// before this linking existed), or creates a new one. `fetchImage: false`
+// skips the extra Comic Vine request for a photo — used to cap how many
+// image lookups a single import can rack up.
 export async function findOrCreateComicVineCharacter(input: {
   comicvineId: string;
   name: string;
   publisher: string;
   created_by: string;
+  fetchImage?: boolean;
 }): Promise<Character> {
+  const fetchImage = input.fetchImage ?? true;
   const { data: byId, error: byIdErr } = await db()
     .from("characters")
     .select("*")
     .eq("comicvine_id", input.comicvineId)
     .maybeSingle();
   if (byIdErr) throw byIdErr;
-  if (byId) return byId.image_url ? byId : backfillCharacterImage(byId, input.comicvineId);
+  if (byId) return byId.image_url || !fetchImage ? byId : backfillCharacterImage(byId, input.comicvineId);
 
   const { data: nameMatches, error: nameErr } = await db()
     .from("characters")
@@ -143,7 +147,8 @@ export async function findOrCreateComicVineCharacter(input: {
     // creator to update it, so this silently no-ops for characters other
     // users made — the name-match fallback above still finds it next time.
     try {
-      const imageUrl = existing.image_url ?? (await getComicVineCharacter(input.comicvineId).catch(() => null))?.imageUrl ?? null;
+      const imageUrl =
+        existing.image_url ?? (fetchImage ? (await getComicVineCharacter(input.comicvineId).catch(() => null))?.imageUrl : null) ?? null;
       const { data: updated, error: updateErr } = await db()
         .from("characters")
         .update({ comicvine_id: input.comicvineId, publisher: existing.publisher || input.publisher, image_url: imageUrl })
@@ -157,7 +162,7 @@ export async function findOrCreateComicVineCharacter(input: {
     }
   }
 
-  const cvCharacter = await getComicVineCharacter(input.comicvineId).catch(() => null);
+  const cvCharacter = fetchImage ? await getComicVineCharacter(input.comicvineId).catch(() => null) : null;
   return createCharacter({
     name: input.name,
     description: "",

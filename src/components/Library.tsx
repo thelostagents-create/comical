@@ -24,6 +24,12 @@ import RatingStars from "./RatingStars";
 import { Toast, useToast } from "./Toast";
 
 const MAX_IMPORTED_ISSUES = 60;
+// Fetching a character's photo costs its own Comic Vine request — cap how
+// many *new* characters a single import will fetch one for, so a run with a
+// huge cast can't blow through the rate limit by itself. Characters beyond
+// this just import without a photo (still gets backfilled on a later import
+// that references them, per findOrCreateComicVineCharacter).
+const MAX_NEW_CHARACTER_IMAGE_FETCHES = 15;
 
 const FILTERS: Array<LibraryStatus | "all"> = ["all", "reading", "plan_to_read", "completed", "dropped"];
 
@@ -153,6 +159,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [cvQuery, setCvQuery] = useState("");
+  const [cvYear, setCvYear] = useState("");
   const [cvResults, setCvResults] = useState<ComicVineVolume[]>([]);
   const [cvSearching, setCvSearching] = useState(false);
   const [cvImportingId, setCvImportingId] = useState<string | null>(null);
@@ -186,6 +193,11 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
     setStep("rate");
   }
 
+  // Comic Vine's search often returns the same title from several different
+  // years/runs — filtering the already-fetched results client-side costs no
+  // extra requests, unlike re-searching with the year baked into the query.
+  const visibleCvResults = cvYear.trim() ? cvResults.filter((v) => v.startYear === cvYear.trim()) : cvResults;
+
   async function handleCreate() {
     if (!profile || !title.trim()) return;
     setBusy(true);
@@ -217,6 +229,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
         created_by: profile.id,
       });
       const characterCache = new Map<string, string>(); // comicvineId -> character id
+      let newCharacterImageFetches = 0;
       for (const issue of issues.slice(0, MAX_IMPORTED_ISSUES)) {
         const createdIssue = await createIssue({
           series_id: series.id,
@@ -230,11 +243,14 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             issue.characters.map(async (c) => {
               let characterId = characterCache.get(c.comicvineId);
               if (!characterId) {
+                const fetchImage = newCharacterImageFetches < MAX_NEW_CHARACTER_IMAGE_FETCHES;
+                if (fetchImage) newCharacterImageFetches += 1;
                 const character = await findOrCreateComicVineCharacter({
                   comicvineId: c.comicvineId,
                   name: c.name,
                   publisher: volume.publisher,
                   created_by: profile.id,
+                  fetchImage,
                 });
                 characterId = character.id;
                 characterCache.set(c.comicvineId, characterId);
@@ -324,18 +340,29 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
 
       {step === "cvsearch" && (
         <>
-          <div className="field">
-            <span>Search Comic Vine</span>
-            <input
-              autoFocus
-              value={cvQuery}
-              onChange={(e) => setCvQuery(e.target.value)}
-              placeholder="Saga, Batman, Monstress…"
-            />
+          <div style={{ display: "flex", gap: 8 }}>
+            <div className="field" style={{ flex: 1 }}>
+              <span>Search Comic Vine</span>
+              <input
+                autoFocus
+                value={cvQuery}
+                onChange={(e) => setCvQuery(e.target.value)}
+                placeholder="Saga, Batman, Monstress…"
+              />
+            </div>
+            <div className="field" style={{ width: 90 }}>
+              <span>Year</span>
+              <input
+                value={cvYear}
+                onChange={(e) => setCvYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="e.g. 2016"
+                inputMode="numeric"
+              />
+            </div>
           </div>
           {cvError && <div className="auth-error">{cvError}</div>}
           <div>
-            {cvResults.map((v) => (
+            {visibleCvResults.map((v) => (
               <div className="card series-row" key={v.id} onClick={() => !cvImportingId && importFromComicVine(v)}>
                 {v.imageUrl ? (
                   <img className="cover" src={v.imageUrl} alt="" />
@@ -353,8 +380,10 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
                 {cvImportingId === v.id && <span className="sub">Importing…</span>}
               </div>
             ))}
-            {!cvSearching && !cvError && cvQuery.trim() && cvResults.length === 0 && (
-              <div className="empty">No matches on Comic Vine.</div>
+            {!cvSearching && !cvError && cvQuery.trim() && visibleCvResults.length === 0 && (
+              <div className="empty">
+                {cvYear.trim() ? `No ${cvYear.trim()} matches on Comic Vine.` : "No matches on Comic Vine."}
+              </div>
             )}
           </div>
           <button className="btn-secondary" onClick={() => setStep("search")}>
