@@ -250,9 +250,18 @@ export default function Fandom() {
                 </button>
               );
             })}
-            <button className="reaction-btn" onClick={() => toggleReplies(post.id)}>
+            <button
+              className={`reaction-btn${openReplies.has(post.id) ? " active" : ""}`}
+              onClick={() => toggleReplies(post.id)}
+            >
               <Icon name="reply" size={13} />
-              {post.replyCount > 0 && <span className="reaction-count">{post.replyCount}</span>}
+              <span className="reaction-count">
+                {openReplies.has(post.id)
+                  ? "Hide"
+                  : post.replyCount > 0
+                    ? `${post.replyCount} ${post.replyCount === 1 ? "reply" : "replies"}`
+                    : "Reply"}
+              </span>
             </button>
           </div>
 
