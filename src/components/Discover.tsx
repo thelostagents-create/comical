@@ -38,7 +38,7 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
   useEffect(() => {
     const t = setTimeout(async () => {
       const trimmed = query.trim();
-      if (mode === "comics") setSeries(trimmed ? await searchSeries(query) : await fetchRecentSeries());
+      if (mode === "comics") setSeries(trimmed ? await searchSeries(query) : await fetchRecentSeries(12));
       else if (mode === "characters")
         setCharacters(trimmed ? await searchCharacters(query) : await fetchRecentCharacters());
       else setShows(trimmed ? await searchShows(query) : await fetchRecentShows());
@@ -55,7 +55,7 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
   async function openSpotlights(c: Character) {
     setSpotlightCharacter(c);
     setSpotlights(null);
-    setSpotlights(await fetchCharacterSpotlights(c.id));
+    setSpotlights(await fetchCharacterSpotlights(c.id, 3));
   }
 
   return (
