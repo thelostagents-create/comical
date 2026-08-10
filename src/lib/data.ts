@@ -3,6 +3,7 @@ import type {
   Character,
   FandomPost,
   FandomReaction,
+  FandomReply,
   FavoriteCharacter,
   Follow,
   Issue,
@@ -709,6 +710,7 @@ export interface FandomPostRow extends FandomPost {
   reactionCounts: Partial<Record<ReactionType, number>>;
   myReactions: ReactionType[];
   hashtags: string[];
+  replyCount: number;
 }
 
 async function hydratePosts(posts: FandomPost[], currentUserId: string): Promise<FandomPostRow[]> {
@@ -720,14 +722,17 @@ async function hydratePosts(posts: FandomPost[], currentUserId: string): Promise
     { data: profiles, error: profilesErr },
     { data: reactions, error: reactionsErr },
     { data: hashtags, error: hashtagsErr },
+    { data: replies, error: repliesErr },
   ] = await Promise.all([
     db().from("profiles").select("*").in("id", userIds),
     db().from("fandom_reactions").select("*").in("post_id", postIds),
     db().from("fandom_post_hashtags").select("*").in("post_id", postIds),
+    db().from("fandom_replies").select("post_id").in("post_id", postIds),
   ]);
   if (profilesErr) throw profilesErr;
   if (reactionsErr) throw reactionsErr;
   if (hashtagsErr) throw hashtagsErr;
+  if (repliesErr) throw repliesErr;
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
@@ -751,6 +756,11 @@ async function hydratePosts(posts: FandomPost[], currentUserId: string): Promise
     hashtagsByPost.set(h.post_id, tags);
   }
 
+  const replyCountByPost = new Map<string, number>();
+  for (const r of (replies ?? []) as { post_id: string }[]) {
+    replyCountByPost.set(r.post_id, (replyCountByPost.get(r.post_id) ?? 0) + 1);
+  }
+
   return posts
     .filter((p) => profileById.get(p.user_id))
     .map((p) => ({
@@ -759,6 +769,7 @@ async function hydratePosts(posts: FandomPost[], currentUserId: string): Promise
       reactionCounts: reactionCountsByPost.get(p.id) ?? {},
       myReactions: myReactionsByPost.get(p.id) ?? [],
       hashtags: hashtagsByPost.get(p.id) ?? [],
+      replyCount: replyCountByPost.get(p.id) ?? 0,
     }));
 }
 
@@ -829,6 +840,42 @@ export async function createFandomPost(input: {
 
 export async function deleteFandomPost(postId: string) {
   const { error } = await db().from("fandom_posts").delete().eq("id", postId);
+  if (error) throw error;
+}
+
+export interface FandomReplyRow extends FandomReply {
+  profile: Profile;
+}
+
+export async function fetchReplies(postId: string): Promise<FandomReplyRow[]> {
+  const { data: replies, error } = await db()
+    .from("fandom_replies")
+    .select("*")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  if (!replies || replies.length === 0) return [];
+
+  const userIds = [...new Set(replies.map((r) => r.user_id))];
+  const { data: profiles, error: profilesErr } = await db().from("profiles").select("*").in("id", userIds);
+  if (profilesErr) throw profilesErr;
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  return replies.filter((r) => profileById.get(r.user_id)).map((r) => ({ ...r, profile: profileById.get(r.user_id)! }));
+}
+
+export async function createFandomReply(input: {
+  post_id: string;
+  user_id: string;
+  body: string;
+}): Promise<FandomReply> {
+  const { data, error } = await db().from("fandom_replies").insert(input).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteFandomReply(replyId: string) {
+  const { error } = await db().from("fandom_replies").delete().eq("id", replyId);
   if (error) throw error;
 }
 

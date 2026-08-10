@@ -335,9 +335,9 @@ function AddFavoriteModal({
       {selected ? (
         <div className="user-row" style={{ padding: 0 }}>
           {selected.image_url ? (
-            <img className="avatar" src={selected.image_url} alt="" />
+            <img className="avatar avatar-square" src={selected.image_url} alt="" />
           ) : (
-            <div className="avatar">{selected.name.slice(0, 2).toUpperCase()}</div>
+            <div className="avatar avatar-square">{selected.name.slice(0, 2).toUpperCase()}</div>
           )}
           <div className="name">{selected.name}</div>
           <button className="btn-secondary" onClick={() => setSelected(null)}>
@@ -360,9 +360,9 @@ function AddFavoriteModal({
               {availableResults.slice(0, 6).map((c) => (
                 <div className="user-row" key={c.id} onClick={() => setSelected(c)}>
                   {c.image_url ? (
-                    <img className="avatar" src={c.image_url} alt="" />
+                    <img className="avatar avatar-square" src={c.image_url} alt="" />
                   ) : (
-                    <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
+                    <div className="avatar avatar-square">{c.name.slice(0, 2).toUpperCase()}</div>
                   )}
                   <div className="name">{c.name}</div>
                   {c.publisher && <span className="sub">{c.publisher}</span>}

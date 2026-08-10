@@ -30,8 +30,8 @@ readers to see their activity — a Goodreads-style tracker for comics.
   read — a character only shows up if Comic Vine actually lists them in
   something you've read, no guessing from series titles.
 - **Fandom** — a tweet-style feed: post short updates with `#hashtags`,
-  react to any post with 👍 ❤️ 😂 😮 😢, and search hashtags to jump
-  straight to everything posted under one.
+  react to any post with 👍 ❤️ 😂 😮 😢, reply to a post, and search
+  hashtags to jump straight to everything posted under one.
 - **Favorite characters** — pick up to 9 favorite characters on your
   profile, each with its own photo (search the catalog or type a new name).
   Tap one to see every comic run you've read that features them, based on
@@ -114,7 +114,8 @@ This app requires a Supabase project — there's no local/offline mode.
    column to `characters`), then
    `supabase/migrations/0005_issue_characters.sql` (adds `comicvine_id` to
    `characters` and an `issue_characters` link table for real per-issue
-   character data from Comic Vine imports).
+   character data from Comic Vine imports), then
+   `supabase/migrations/0006_fandom_replies.sql` (adds `fandom_replies`).
 3. Auth → Providers: **Email** should be enabled by default.
 4. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
    to pre-populate the catalog with 12 well-known series (Saga, Batman, The

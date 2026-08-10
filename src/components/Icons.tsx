@@ -15,7 +15,8 @@ type IconName =
   | "moon"
   | "edit"
   | "close"
-  | "image";
+  | "image"
+  | "reply";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = {
@@ -157,6 +158,13 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
           <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
           <circle cx="8.7" cy="9.7" r="1.6" fill="currentColor" stroke="none" />
           <path d="M4.2 16.8l4.8-4.8 3.7 3.7 2.8-2.8 4.3 4.3" />
+        </svg>
+      );
+    case "reply":
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="5" width="17" height="12" rx="3" />
+          <path d="M8 17v3.2L12.5 17" />
         </svg>
       );
   }

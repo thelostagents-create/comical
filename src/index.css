@@ -435,6 +435,7 @@ h3 {
   aspect-ratio: 1;
   height: auto;
   font-size: 15px;
+  border-radius: 22%;
 }
 
 .character-tile h3 {
@@ -691,6 +692,12 @@ h3 {
   color: var(--text);
   flex-shrink: 0;
   object-fit: cover;
+}
+
+/* Characters get a rounded square instead of a circle, to read as
+   distinct from people (who keep the circular .avatar). */
+.avatar-square {
+  border-radius: 22%;
 }
 
 .user-row .name {
@@ -963,6 +970,77 @@ h3 {
 .reaction-count {
   font-family: var(--font-mono);
   font-size: 11px;
+}
+
+.reply-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.reply-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.reply-item .avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 10px;
+}
+
+.reply-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.reply-body p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.reply-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.reply-meta .name {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.reply-delete {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.reply-composer {
+  display: flex;
+  gap: 8px;
+}
+
+.reply-composer input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+.reply-composer input:focus {
+  border-color: var(--accent);
 }
 
 /* ----------------------------------------------------------- image field */

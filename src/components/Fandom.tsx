@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
 import {
   createFandomPost,
+  createFandomReply,
   deleteFandomPost,
+  deleteFandomReply,
   fetchFandomPosts,
+  fetchReplies,
   searchFandomPostsByHashtag,
   searchHashtags,
   toggleReaction,
   type FandomPostRow,
+  type FandomReplyRow,
 } from "../lib/data";
 import { timeAgo } from "../lib/format";
 import { REACTION_EMOJI, REACTION_TYPES, type ReactionType } from "../types";
@@ -35,6 +39,10 @@ export default function Fandom() {
   const [tagResults, setTagResults] = useState<{ tag: string; count: number }[]>([]);
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
+  const [openReplies, setOpenReplies] = useState<Set<string>>(new Set());
+  const [repliesByPost, setRepliesByPost] = useState<Record<string, FandomReplyRow[]>>({});
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [postingReplyFor, setPostingReplyFor] = useState<string | null>(null);
 
   async function reload() {
     if (!profile) return;
@@ -104,6 +112,45 @@ export default function Fandom() {
     } catch {
       reload();
     }
+  }
+
+  async function toggleReplies(postId: string) {
+    setOpenReplies((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
+    if (!repliesByPost[postId]) {
+      const replies = await fetchReplies(postId);
+      setRepliesByPost((prev) => ({ ...prev, [postId]: replies }));
+    }
+  }
+
+  async function handleReplySubmit(postId: string) {
+    const text = (replyDrafts[postId] ?? "").trim();
+    if (!profile || !text) return;
+    setPostingReplyFor(postId);
+    try {
+      const reply = await createFandomReply({ post_id: postId, user_id: profile.id, body: text });
+      setRepliesByPost((prev) => ({
+        ...prev,
+        [postId]: [...(prev[postId] ?? []), { ...reply, profile }],
+      }));
+      setReplyDrafts((prev) => ({ ...prev, [postId]: "" }));
+      setPosts((prev) => prev?.map((p) => (p.id === postId ? { ...p, replyCount: p.replyCount + 1 } : p)) ?? null);
+    } finally {
+      setPostingReplyFor(null);
+    }
+  }
+
+  async function handleDeleteReply(postId: string, replyId: string) {
+    setRepliesByPost((prev) => ({
+      ...prev,
+      [postId]: (prev[postId] ?? []).filter((r) => r.id !== replyId),
+    }));
+    setPosts((prev) => prev?.map((p) => (p.id === postId ? { ...p, replyCount: Math.max(0, p.replyCount - 1) } : p)) ?? null);
+    await deleteFandomReply(replyId);
   }
 
   return (
@@ -203,7 +250,58 @@ export default function Fandom() {
                 </button>
               );
             })}
+            <button className="reaction-btn" onClick={() => toggleReplies(post.id)}>
+              <Icon name="reply" size={13} />
+              {post.replyCount > 0 && <span className="reaction-count">{post.replyCount}</span>}
+            </button>
           </div>
+
+          {openReplies.has(post.id) && (
+            <div className="reply-section">
+              {repliesByPost[post.id] === undefined && <div className="empty" style={{ padding: 10 }}>Loading…</div>}
+              {repliesByPost[post.id]?.map((reply) => (
+                <div className="reply-item" key={reply.id}>
+                  {reply.profile.avatar_url ? (
+                    <img className="avatar" src={reply.profile.avatar_url} alt="" />
+                  ) : (
+                    <div className="avatar">{reply.profile.username.slice(0, 2).toUpperCase()}</div>
+                  )}
+                  <div className="reply-body">
+                    <div className="reply-meta">
+                      <span className="name">@{reply.profile.username}</span>
+                      <span className="when">{timeAgo(reply.created_at)}</span>
+                    </div>
+                    <p>{reply.body}</p>
+                  </div>
+                  {profile?.id === reply.user_id && (
+                    <button
+                      className="icon-btn reply-delete"
+                      onClick={() => handleDeleteReply(post.id, reply.id)}
+                      aria-label="Delete reply"
+                    >
+                      <Icon name="close" size={11} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div className="reply-composer">
+                <input
+                  value={replyDrafts[post.id] ?? ""}
+                  onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && handleReplySubmit(post.id)}
+                  placeholder="Write a reply…"
+                  maxLength={280}
+                />
+                <button
+                  className="btn-secondary"
+                  disabled={postingReplyFor === post.id || !(replyDrafts[post.id] ?? "").trim()}
+                  onClick={() => handleReplySubmit(post.id)}
+                >
+                  Reply
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>
