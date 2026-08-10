@@ -97,7 +97,7 @@ export default function Library({
           <div className="cover-tile" key={row.id} onClick={() => onOpenSeries(row.series_id)}>
             {row.status === "completed" && (
               <div className="stamp" aria-label="Read">
-                <Icon name="check" size={14} />
+                <Icon name="check" size={11} />
               </div>
             )}
             {row.starred && (

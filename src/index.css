@@ -866,23 +866,15 @@ h3 {
   position: absolute;
   top: 6px;
   left: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1.3px dashed var(--accent);
-  color: var(--accent);
   background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: blur(4px);
-  transform: rotate(-8deg);
-  text-align: center;
-  font-size: 5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  line-height: 1.15;
+  color: var(--accent);
 }
 
 .pinned-star {
