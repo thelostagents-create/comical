@@ -89,26 +89,32 @@ export default function Journal({
         </div>
       </div>
 
-      {topCharacters.length > 0 && (
-        <>
-          <div className="section-title">most-read characters</div>
-          <div className="character-grid">
-            {topCharacters.map((c) => (
-              <div className="character-tile" key={c.id}>
-                {c.image_url ? (
-                  <img className="avatar" src={c.image_url} alt="" />
-                ) : (
-                  <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
-                )}
-                <h3>{c.name}</h3>
-                <div className="character-meta">
-                  <Icon name="book" size={9} />
-                  {c.issuesRead} {c.issuesRead === 1 ? "issue" : "issues"}
-                </div>
+      <div className="section-title">most-read characters</div>
+      {topCharacters.length === 0 ? (
+        <div className="empty">
+          Nothing here yet.
+          <br />
+          This only counts characters Comic Vine lists in an issue you've
+          read — add a comic via "Search Comic Vine" (not a manual entry)
+          and mark some issues read to see them here.
+        </div>
+      ) : (
+        <div className="character-grid">
+          {topCharacters.map((c) => (
+            <div className="character-tile" key={c.id}>
+              {c.image_url ? (
+                <img className="avatar" src={c.image_url} alt="" />
+              ) : (
+                <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
+              )}
+              <h3>{c.name}</h3>
+              <div className="character-meta">
+                <Icon name="book" size={9} />
+                {c.issuesRead} {c.issuesRead === 1 ? "issue" : "issues"}
               </div>
-            ))}
-          </div>
-        </>
+            </div>
+          ))}
+        </div>
       )}
 
       <div className="section-title">your blurbs</div>
