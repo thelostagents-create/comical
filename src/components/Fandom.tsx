@@ -43,6 +43,7 @@ export default function Fandom() {
   const [repliesByPost, setRepliesByPost] = useState<Record<string, FandomReplyRow[]>>({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [postingReplyFor, setPostingReplyFor] = useState<string | null>(null);
+  const [reactionPickerFor, setReactionPickerFor] = useState<string | null>(null);
 
   async function reload() {
     if (!profile) return;
@@ -92,6 +93,7 @@ export default function Fandom() {
   async function handleReact(post: FandomPostRow, reaction: ReactionType) {
     if (!profile) return;
     const active = post.myReactions.includes(reaction);
+    setReactionPickerFor(null);
     setPosts(
       (prev) =>
         prev?.map((p) =>
@@ -236,7 +238,7 @@ export default function Fandom() {
           </div>
           <p className="post-body">{renderBody(post.body, openTag)}</p>
           <div className="reaction-row">
-            {REACTION_TYPES.map((r) => {
+            {REACTION_TYPES.filter((r) => (post.reactionCounts[r] ?? 0) > 0).map((r) => {
               const count = post.reactionCounts[r] ?? 0;
               const active = post.myReactions.includes(r);
               return (
@@ -246,10 +248,21 @@ export default function Fandom() {
                   onClick={() => handleReact(post, r)}
                 >
                   <span>{REACTION_EMOJI[r]}</span>
-                  {count > 0 && <span className="reaction-count">{count}</span>}
+                  <span className="reaction-count">{count}</span>
                 </button>
               );
             })}
+            {reactionPickerFor === post.id ? (
+              REACTION_TYPES.map((r) => (
+                <button key={r} className="reaction-btn" onClick={() => handleReact(post, r)}>
+                  <span>{REACTION_EMOJI[r]}</span>
+                </button>
+              ))
+            ) : (
+              <button className="reaction-btn" onClick={() => setReactionPickerFor(post.id)}>
+                React
+              </button>
+            )}
             <button
               className={`reaction-btn${openReplies.has(post.id) ? " active" : ""}`}
               onClick={() => toggleReplies(post.id)}

@@ -385,7 +385,6 @@ h3 {
 }
 
 .cover-tile .cover {
-  display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 2 / 3;
@@ -437,7 +436,6 @@ h3 {
 }
 
 .character-tile .avatar {
-  display: block;
   width: 100%;
   aspect-ratio: 1;
   height: auto;

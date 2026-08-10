@@ -41,7 +41,7 @@ export async function searchSeries(query: string): Promise<Series[]> {
   const trimmed = query.trim();
   if (trimmed)
     q = q.or(`title.ilike.%${trimmed}%,publisher.ilike.%${trimmed}%,description.ilike.%${trimmed}%`);
-  const { data, error } = await q.limit(50);
+  const { data, error } = await q.limit(15);
   if (error) throw error;
   return data ?? [];
 }
@@ -94,7 +94,7 @@ export async function searchCharacters(query: string): Promise<Character[]> {
   let q = db().from("characters").select("*").order("name");
   const trimmed = query.trim();
   if (trimmed) q = q.or(`name.ilike.%${trimmed}%,description.ilike.%${trimmed}%`);
-  const { data, error } = await q.limit(50);
+  const { data, error } = await q.limit(15);
   if (error) throw error;
   return data ?? [];
 }
@@ -503,7 +503,7 @@ export type FeedItem =
       label: string;
     };
 
-export async function fetchFeed(userId: string, limit = 40): Promise<FeedItem[]> {
+export async function fetchFeed(userId: string, limit = 50): Promise<FeedItem[]> {
   const following = await fetchFollowing(userId);
   const ids = following.map((f) => f.followee_id);
   if (ids.length === 0) return [];
