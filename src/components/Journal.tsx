@@ -25,7 +25,7 @@ export default function Journal({
   const [cover, setCover] = useState(getJournalCover());
   const [readCount, setReadCount] = useState(0);
   const [seriesCount, setSeriesCount] = useState(0);
-  const [topCharacters, setTopCharacters] = useState<Character[]>([]);
+  const [topCharacters, setTopCharacters] = useState<(Character & { issuesRead: number; seriesTitle: string })[]>([]);
   const [blurbs, setBlurbs] = useState<Blurb[] | null>(null);
   const [showCoverModal, setShowCoverModal] = useState(false);
 
@@ -41,12 +41,21 @@ export default function Journal({
       setSeriesCount(stats.seriesCount);
       setBlurbs(myBlurbs);
 
-      const topSeriesIds = library
+      const topRows = library
         .filter((row) => row.readCount > 0)
         .sort((a, b) => b.readCount - a.readCount)
-        .slice(0, 5)
-        .map((row) => row.series_id);
-      setTopCharacters(await getCharactersBySeriesIds(topSeriesIds));
+        .slice(0, 5);
+      const seriesStatsById = new Map(
+        topRows.map((row) => [row.series_id, { readCount: row.readCount, title: row.series.title }]),
+      );
+      const chars = await getCharactersBySeriesIds(topRows.map((row) => row.series_id));
+      const charsWithStats = chars
+        .map((c) => {
+          const stats = c.series_id ? seriesStatsById.get(c.series_id) : undefined;
+          return { ...c, issuesRead: stats?.readCount ?? 0, seriesTitle: stats?.title ?? "" };
+        })
+        .sort((a, b) => b.issuesRead - a.issuesRead);
+      setTopCharacters(charsWithStats);
     })();
   }, [profile]);
 
@@ -99,6 +108,10 @@ export default function Journal({
                   <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
                 )}
                 <h3>{c.name}</h3>
+                <div className="character-meta">
+                  <Icon name="book" size={9} />
+                  {c.issuesRead} {c.issuesRead === 1 ? "issue" : "issues"}
+                </div>
               </div>
             ))}
           </div>
