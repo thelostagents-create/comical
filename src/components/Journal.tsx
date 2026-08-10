@@ -46,26 +46,53 @@ export default function Journal({
 
       const readRows = library.filter((row) => row.readCount > 0);
       const seriesStatsById = new Map(
-        readRows.map((row) => [row.series_id, { readCount: row.readCount, title: row.series.title }]),
+        readRows.map((row) => [
+          row.series_id,
+          { readCount: row.readCount, title: row.series.title, coverUrl: row.series.cover_url },
+        ]),
       );
 
+      const claimedSeriesIds = new Set<string>();
       const allCharacters = await searchCharacters("");
-      const charsWithStats = allCharacters
+      const catalogChars = allCharacters
         .map((c) => {
           const linked = c.series_id ? seriesStatsById.get(c.series_id) : undefined;
-          if (linked) return { ...c, issuesRead: linked.readCount, seriesTitle: linked.title };
+          if (linked && c.series_id) {
+            claimedSeriesIds.add(c.series_id);
+            return { ...c, issuesRead: linked.readCount, seriesTitle: linked.title };
+          }
 
           let issuesRead = 0;
           let seriesTitle = "";
-          for (const stat of seriesStatsById.values()) {
+          for (const [seriesId, stat] of seriesStatsById) {
             if (nameMatchesTitle(c.name, stat.title)) {
               issuesRead += stat.readCount;
               seriesTitle = seriesTitle || stat.title;
+              claimedSeriesIds.add(seriesId);
             }
           }
           return { ...c, issuesRead, seriesTitle };
         })
-        .filter((c) => c.issuesRead > 0)
+        .filter((c) => c.issuesRead > 0);
+
+      // Any read series with no matching character in the catalog still
+      // shows up here, standing in as its own "character" — so this section
+      // works with zero setup, no need to add characters by hand.
+      const impliedChars = [...seriesStatsById]
+        .filter(([seriesId]) => !claimedSeriesIds.has(seriesId))
+        .map(([seriesId, stat]) => ({
+          id: `series:${seriesId}`,
+          name: stat.title,
+          description: "",
+          image_url: stat.coverUrl,
+          series_id: seriesId,
+          created_by: null,
+          created_at: "",
+          issuesRead: stat.readCount,
+          seriesTitle: stat.title,
+        }));
+
+      const charsWithStats = [...catalogChars, ...impliedChars]
         .sort((a, b) => b.issuesRead - a.issuesRead)
         .slice(0, 6);
       setTopCharacters(charsWithStats);
