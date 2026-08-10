@@ -17,7 +17,10 @@ type IconName =
   | "close"
   | "image"
   | "reply"
-  | "bell";
+  | "bell"
+  | "shield"
+  | "chevron-up"
+  | "chevron-down";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = {
@@ -173,6 +176,24 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
         <svg {...common}>
           <path d="M6 10.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14.5 6 10.5Z" />
           <path d="M10.3 19.5a1.8 1.8 0 0 0 3.4 0" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 5 6v5.5c0 4.7 3 8 7 9.5 4-1.5 7-4.8 7-9.5V6l-7-2.5Z" />
+        </svg>
+      );
+    case "chevron-up":
+      return (
+        <svg {...common}>
+          <polyline points="5 15 12 8 19 15" />
+        </svg>
+      );
+    case "chevron-down":
+      return (
+        <svg {...common}>
+          <polyline points="5 9 12 16 19 9" />
         </svg>
       );
   }

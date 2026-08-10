@@ -199,6 +199,21 @@ function AuthForm() {
   );
 }
 
+function BannedNotice() {
+  const { signOut } = useAuth();
+  return (
+    <div className="auth-screen">
+      <div className="auth-card">
+        <h1>Comical</h1>
+        <p>Your account has been banned from this app.</p>
+        <button className="btn-secondary" onClick={signOut}>
+          Log out
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AuthGate({ children }: { children: ReactNode }) {
   const { session, loading, profile, passwordRecovery } = useAuth();
 
@@ -207,6 +222,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   if (passwordRecovery) return <ResetPasswordForm />;
   if (!session) return <AuthForm />;
   if (!profile) return <div className="auth-screen">Setting up your profile…</div>;
+  if (profile.is_banned) return <BannedNotice />;
 
   return <>{children}</>;
 }

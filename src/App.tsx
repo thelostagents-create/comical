@@ -9,6 +9,7 @@ import Profile from "./components/Profile";
 import SeriesDetail from "./components/SeriesDetail";
 import Journal from "./components/Journal";
 import AccentPicker from "./components/AccentPicker";
+import AdminPanel from "./components/AdminPanel";
 import NotificationsPanel from "./components/NotificationsPanel";
 import { Icon } from "./components/Icons";
 import { fetchUnreadNotificationCount } from "./lib/data";
@@ -28,6 +29,7 @@ function Shell() {
   const [view, setView] = useState<View>({ tab: "library" });
   const [showAccentPicker, setShowAccentPicker] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [mode, setMode] = useState<ThemeMode>(getThemeMode());
 
@@ -107,6 +109,11 @@ function Shell() {
           <button className="icon-btn" onClick={() => setShowAccentPicker(true)} aria-label="Change accent color">
             <Icon name="palette" size={17} />
           </button>
+          {profile?.is_admin && (
+            <button className="icon-btn" onClick={() => setShowAdmin(true)} aria-label="Admin">
+              <Icon name="shield" size={17} />
+            </button>
+          )}
           {tab === "profile" && (!("userId" in view) || !view.userId) && (
             <button className="btn-link" onClick={signOut}>
               Log out
@@ -141,6 +148,8 @@ function Shell() {
       </nav>
 
       {showAccentPicker && <AccentPicker onClose={() => setShowAccentPicker(false)} />}
+
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
 
       {showNotifications && (
         <NotificationsPanel

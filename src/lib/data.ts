@@ -440,9 +440,28 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 
 export async function updateProfile(
   userId: string,
-  patch: { bio?: string; avatar_url?: string | null; banner_url?: string | null; fandoms?: string },
+  patch: {
+    bio?: string;
+    avatar_url?: string | null;
+    banner_url?: string | null;
+    fandoms?: string;
+    nickname?: string;
+  },
 ) {
   const { error } = await db().from("profiles").update(patch).eq("id", userId);
+  if (error) throw error;
+}
+
+// Admin-only: flips a user's is_muted/is_banned flags via a narrow RPC
+// (see migration 0011) rather than a broad profile-update grant — the
+// database itself re-checks the caller is an admin, so this can't be
+// abused even if the client-side is_admin gate were bypassed.
+export async function adminSetUserModeration(targetUserId: string, muted: boolean, banned: boolean) {
+  const { error } = await db().rpc("set_user_moderation", {
+    target_user_id: targetUserId,
+    muted,
+    banned,
+  });
   if (error) throw error;
 }
 

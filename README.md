@@ -49,7 +49,8 @@ readers to see their activity — a Goodreads-style tracker for comics.
   Comic Vine character data (`character_credits`) for issues you've marked
   read — a character only shows up if Comic Vine actually lists them in
   something you've read, no guessing from series titles. Tap one to see
-  every comic run you've read featuring them.
+  every comic run you've read featuring them, 3 at a time with up/down
+  buttons to page through the rest.
 - **Fandom** — a tweet-style feed: post short updates with `#hashtags`,
   react to any post with 👍 ❤️ 😂 😮 😢, reply to a post (replies are
   collapsible), and search hashtags to jump straight to everything posted
@@ -69,14 +70,20 @@ readers to see their activity — a Goodreads-style tracker for comics.
   favorite to open that series.
 - **Favorite characters** — pick up to 9 favorite characters on your
   profile, each with its own photo (search the catalog or type a new name).
-  Tap one to see every comic run you've read that features them, based on
-  the same real Comic Vine character data.
+  Tap one to see every comic run you've read that features them (3 at a
+  time, same up/down paging as Journal), based on the same real Comic Vine
+  character data.
 - **Customizable profile** — a banner image behind your avatar, an avatar
-  photo (paste a URL or upload), and a free-text "fandoms" line, all
-  editable from your own profile.
+  photo (paste a URL or upload), a nickname shown above your @username
+  (falls back to your username if left blank), and a free-text "fandoms"
+  line, all editable from your own profile.
 - **Social** — find and follow other readers from the Feed tab, browse
   their stats, and see what people you follow are reading and rating. A
   series page shows just the reader count, not who they are.
+- **Admin moderation** — a shield icon in the top bar (visible only to
+  admins) opens a panel to delete any Fandom post and mute (blocks
+  posting/replying) or ban (blocks using the app) any user. There's no
+  in-app way to grant the first admin — see the migration notes below.
 - **Light/dark mode** — toggle from the top bar; dark is near-black, light
   is a warm beige/cream. Each mode remembers its own accent color.
 - **Custom accent color** — pick your own accent color (presets or a hex
@@ -164,22 +171,31 @@ This app requires a Supabase project — there's no local/offline mode.
    `supabase/migrations/0009_profile_customization.sql` (adds `banner_url`
    and `fandoms` to `profiles`), then
    `supabase/migrations/0010_favorite_series.sql` (adds `favorite_series`,
-   for the favorite-comics list on a profile).
-3. Auth → Providers: **Email** should be enabled by default.
-4. For the "Forgot password?" flow to work: Authentication → URL
+   for the favorite-comics list on a profile), then
+   `supabase/migrations/0011_admin_moderation.sql` (adds `is_admin`,
+   `is_muted`, `is_banned` to `profiles`, lets admins delete any Fandom
+   post/reply, and blocks muted/banned users from posting), then
+   `supabase/migrations/0012_nickname.sql` (adds `nickname` to `profiles`).
+3. **To use the admin panel**, make yourself an admin once via the SQL
+   editor (there's no in-app way to grant the first admin):
+   ```sql
+   update public.profiles set is_admin = true where username = 'yourname';
+   ```
+4. Auth → Providers: **Email** should be enabled by default.
+5. For the "Forgot password?" flow to work: Authentication → URL
    Configuration → **Redirect URLs**, add the URL the app is served from
    (e.g. `https://<your-username>.github.io/comical/` for the GitHub Pages
    deploy, or `http://localhost:5173/` for local dev). Without this, the
    reset-password email link won't be allowed to send the user back into
    the app.
-5. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
+6. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
    to pre-populate the catalog with 12 well-known series (Saga, Batman, The
    Sandman, Watchmen, Ms. Marvel, Chainsaw Man, Invincible, and more), each
    with a run of issues already logged. Skip this if you'd rather start
    from an empty catalog and add everything yourself.
-6. Copy `.env.example` to `.env.local` and fill in your **Project URL** and
+7. Copy `.env.example` to `.env.local` and fill in your **Project URL** and
    **anon key** (Project Settings → API).
-7. `npm run dev`.
+8. `npm run dev`.
 
 ### Comic Vine search (optional)
 
@@ -240,6 +256,18 @@ and favorite-character runs will simply stay empty for them.
   runs use; a character with no linked read issues simply doesn't show up.
   `characters.comicvine_id` dedupes the same character across separate
   imports instead of creating a new row every time.
+- `favorite_series` links a user to a series on their profile — same
+  shape/cap as `favorite_characters`, but no per-favorite photo override
+  since a series already has its own catalog cover.
+- `profiles.is_admin` / `is_muted` / `is_banned` drive moderation:
+  `is_admin` gates the admin panel and an extra RLS policy letting admins
+  delete any Fandom post/reply; `is_muted`/`is_banned` are enforced by a
+  restrictive RLS policy that blocks new posts/replies regardless of the
+  owner-only policy, and `is_banned` additionally blocks the whole app
+  from rendering (`AuthGate`). All three can only be flipped through the
+  `set_user_moderation` RPC, which re-checks the caller is an admin
+  server-side. `profiles.nickname` is just a display label — the
+  `@username` handle itself never changes.
 
 ## Notes
 

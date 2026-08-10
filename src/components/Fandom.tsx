@@ -88,6 +88,8 @@ export default function Fandom() {
       await createFandomPost({ user_id: profile.id, body: body.trim(), image_url: null });
       setBody("");
       await reload();
+    } catch {
+      setPostError("Your account isn't able to post right now.");
     } finally {
       setPosting(false);
     }
@@ -155,6 +157,8 @@ export default function Fandom() {
       }));
       setReplyDrafts((prev) => ({ ...prev, [postId]: "" }));
       setPosts((prev) => prev?.map((p) => (p.id === postId ? { ...p, replyCount: p.replyCount + 1 } : p)) ?? null);
+    } catch {
+      setReplyErrors((prev) => ({ ...prev, [postId]: "Your account isn't able to reply right now." }));
     } finally {
       setPostingReplyFor(null);
     }

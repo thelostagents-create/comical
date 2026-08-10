@@ -9,6 +9,10 @@ export interface Profile {
   avatar_url: string | null;
   banner_url: string | null;
   fandoms: string;
+  nickname: string;
+  is_admin: boolean;
+  is_muted: boolean;
+  is_banned: boolean;
   created_at: string;
 }
 

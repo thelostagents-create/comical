@@ -37,6 +37,7 @@ export default function Journal({
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [openCharacter, setOpenCharacter] = useState<Character | null>(null);
   const [characterRuns, setCharacterRuns] = useState<LibraryRow[] | null>(null);
+  const [runsPage, setRunsPage] = useState(0);
 
   useEffect(() => {
     if (!profile) return;
@@ -70,6 +71,7 @@ export default function Journal({
     if (!profile) return;
     setOpenCharacter(c);
     setCharacterRuns(null);
+    setRunsPage(0);
     const library = await fetchLibrary(profile.id);
     setCharacterRuns(await fetchCharacterRuns(profile.id, c, library));
   }
@@ -208,7 +210,7 @@ export default function Journal({
           {characterRuns !== null && characterRuns.length === 0 && (
             <div className="empty">No comic runs read with {openCharacter.name} yet.</div>
           )}
-          {characterRuns?.map((row) => (
+          {characterRuns?.slice(runsPage * 3, runsPage * 3 + 3).map((row) => (
             <div
               className="card series-row"
               key={row.id}
@@ -228,6 +230,29 @@ export default function Journal({
               </div>
             </div>
           ))}
+          {characterRuns !== null && characterRuns.length > 3 && (
+            <div className="runs-pager">
+              <button
+                className="icon-btn"
+                disabled={runsPage === 0}
+                onClick={() => setRunsPage((p) => Math.max(0, p - 1))}
+                aria-label="Previous"
+              >
+                <Icon name="chevron-up" size={15} />
+              </button>
+              <span>
+                {runsPage * 3 + 1}–{Math.min(runsPage * 3 + 3, characterRuns.length)} of {characterRuns.length}
+              </span>
+              <button
+                className="icon-btn"
+                disabled={(runsPage + 1) * 3 >= characterRuns.length}
+                onClick={() => setRunsPage((p) => p + 1)}
+                aria-label="Next"
+              >
+                <Icon name="chevron-down" size={15} />
+              </button>
+            </div>
+          )}
         </Modal>
       )}
     </div>

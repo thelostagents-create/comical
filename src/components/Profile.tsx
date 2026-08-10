@@ -54,6 +54,7 @@ export default function Profile({
   const [addingFavoriteSeries, setAddingFavoriteSeries] = useState(false);
   const [openFavorite, setOpenFavorite] = useState<FavoriteCharacterRow | null>(null);
   const [favoriteRuns, setFavoriteRuns] = useState<LibraryRow[] | null>(null);
+  const [runsPage, setRunsPage] = useState(0);
 
   async function reload() {
     const [p, s, followers, following] = await Promise.all([
@@ -113,6 +114,7 @@ export default function Profile({
   async function openFavoriteRuns(fav: FavoriteCharacterRow) {
     setOpenFavorite(fav);
     setFavoriteRuns(null);
+    setRunsPage(0);
     const library = await fetchLibrary(userId);
     setFavoriteRuns(await fetchCharacterRuns(userId, fav.character, library));
   }
@@ -142,7 +144,7 @@ export default function Profile({
           )}
         </div>
         <div className="profile-identity">
-          <h2>{target.username}</h2>
+          <h2>{target.nickname.trim() || target.username}</h2>
           <div className="sub">@{target.username}</div>
           {target.fandoms.trim() && <div className="profile-fandoms">fandoms : {target.fandoms}</div>}
           {target.bio && <div className="sub" style={{ marginTop: 5 }}>{target.bio}</div>}
@@ -313,7 +315,7 @@ export default function Profile({
           {favoriteRuns !== null && favoriteRuns.length === 0 && (
             <div className="empty">No comic runs read with {openFavorite.character.name} yet.</div>
           )}
-          {favoriteRuns?.map((row) => (
+          {favoriteRuns?.slice(runsPage * 3, runsPage * 3 + 3).map((row) => (
             <div
               className="card series-row"
               key={row.id}
@@ -335,6 +337,29 @@ export default function Profile({
               </div>
             </div>
           ))}
+          {favoriteRuns !== null && favoriteRuns.length > 3 && (
+            <div className="runs-pager">
+              <button
+                className="icon-btn"
+                disabled={runsPage === 0}
+                onClick={() => setRunsPage((p) => Math.max(0, p - 1))}
+                aria-label="Previous"
+              >
+                <Icon name="chevron-up" size={15} />
+              </button>
+              <span>
+                {runsPage * 3 + 1}–{Math.min(runsPage * 3 + 3, favoriteRuns.length)} of {favoriteRuns.length}
+              </span>
+              <button
+                className="icon-btn"
+                disabled={(runsPage + 1) * 3 >= favoriteRuns.length}
+                onClick={() => setRunsPage((p) => p + 1)}
+                aria-label="Next"
+              >
+                <Icon name="chevron-down" size={15} />
+              </button>
+            </div>
+          )}
         </Modal>
       )}
     </div>
@@ -348,16 +373,23 @@ function EditProfileModal({
 }: {
   initial: ProfileType;
   onClose: () => void;
-  onSaved: (patch: { bio: string; avatar_url: string | null; banner_url: string | null; fandoms: string }) => void;
+  onSaved: (patch: {
+    bio: string;
+    avatar_url: string | null;
+    banner_url: string | null;
+    fandoms: string;
+    nickname: string;
+  }) => void;
 }) {
   const [bannerUrl, setBannerUrl] = useState(initial.banner_url ?? "");
   const [avatarUrl, setAvatarUrl] = useState(initial.avatar_url ?? "");
+  const [nickname, setNickname] = useState(initial.nickname);
   const [fandoms, setFandoms] = useState(initial.fandoms);
   const [bio, setBio] = useState(initial.bio);
   const [error, setError] = useState<string | null>(null);
 
   function handleSave() {
-    if (containsBlockedLanguage(fandoms) || containsBlockedLanguage(bio)) {
+    if (containsBlockedLanguage(nickname) || containsBlockedLanguage(fandoms) || containsBlockedLanguage(bio)) {
       setError("That contains language that's not allowed here.");
       return;
     }
@@ -366,6 +398,7 @@ function EditProfileModal({
       avatar_url: avatarUrl.trim() || null,
       banner_url: bannerUrl.trim() || null,
       fandoms: fandoms.trim(),
+      nickname: nickname.trim(),
     });
   }
 
@@ -373,6 +406,15 @@ function EditProfileModal({
     <Modal title="Edit profile" onClose={onClose}>
       <ImageField label="Banner image" value={bannerUrl} onChange={setBannerUrl} folder="profile-banners" />
       <ImageField label="Avatar photo" value={avatarUrl} onChange={setAvatarUrl} folder="avatars" />
+      <label className="field">
+        <span>Nickname (shown instead of your username)</span>
+        <input
+          value={nickname}
+          onChange={(e) => { setNickname(e.target.value); setError(null); }}
+          placeholder={initial.username}
+          maxLength={40}
+        />
+      </label>
       <label className="field">
         <span>Fandoms (comma-separated)</span>
         <input

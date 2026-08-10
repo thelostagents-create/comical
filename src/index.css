@@ -312,6 +312,24 @@ h3 {
   flex-shrink: 0;
 }
 
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.runs-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.runs-pager span {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 .star-toggle {
   width: 36px;
   height: 36px;
@@ -1167,7 +1185,7 @@ h3 {
 
 .journal-cover {
   position: relative;
-  width: 150px;
+  width: 200px;
   flex-shrink: 0;
   aspect-ratio: 2 / 3;
   border-radius: var(--radius);
@@ -1177,13 +1195,17 @@ h3 {
 .stats-row.journal-stats {
   flex-direction: column;
   align-items: flex-start;
-  gap: 18px;
-  margin: 10px 0;
+  gap: 26px;
+  margin: 14px 0;
   padding-top: 2px;
 }
 
 .stats-row.journal-stats .stat b {
-  font-size: 24px;
+  font-size: 32px;
+}
+
+.stats-row.journal-stats .stat span {
+  font-size: 13px;
 }
 
 .stats-row.journal-stats .stat {
