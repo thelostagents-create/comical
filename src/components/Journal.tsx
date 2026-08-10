@@ -83,7 +83,7 @@ export default function Journal({
         <div className="page-title" style={{ margin: 0 }}>My Journal</div>
       </div>
 
-      <div className="journal-header">
+      <div className="card journal-header">
         <div className="journal-cover">
           {cover ? (
             <img src={cover} alt="" />
