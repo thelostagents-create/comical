@@ -157,6 +157,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   const [cvSearching, setCvSearching] = useState(false);
   const [cvImportingId, setCvImportingId] = useState<string | null>(null);
   const [cvError, setCvError] = useState<string | null>(null);
+  const [cvWarning, setCvWarning] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(async () => setResults(await searchSeries(query)), 200);
@@ -204,8 +205,10 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
     if (!profile) return;
     setCvImportingId(volume.id);
     setCvError(null);
+    setCvWarning(null);
     try {
-      const { issues } = await getComicVineVolume(volume.id);
+      const { issues, characterFetchWarning } = await getComicVineVolume(volume.id);
+      setCvWarning(characterFetchWarning);
       const series = await createSeries({
         title: volume.name,
         publisher: volume.publisher,
@@ -399,6 +402,11 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
               <div className="sub">{chosen.publisher || "—"}</div>
             </div>
           </div>
+          {cvWarning && (
+            <div className="auth-error">
+              Imported, but character data may be incomplete: {cvWarning}
+            </div>
+          )}
           <label className="field">
             <span>Your rating (optional)</span>
             <RatingStars value={rating} onChange={setRating} size={28} />

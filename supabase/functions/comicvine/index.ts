@@ -16,7 +16,12 @@ const USER_AGENT = "Comical/1.0 (+https://github.com/thelostagents-create/comica
 // many of a volume's issues we pay that cost for, matching the client's own
 // import cap (MAX_IMPORTED_ISSUES in Library.tsx).
 const MAX_ISSUES_WITH_CHARACTERS = 60;
-const ISSUE_DETAIL_BATCH_SIZE = 10;
+const ISSUE_DETAIL_BATCH_SIZE = 4;
+const BATCH_DELAY_MS = 300;
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,10 +80,18 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Comic Vine wraps every response — success or failure — in HTTP 200 with a
+// status_code field in the body (1 = OK). Rate limiting, an invalid key,
+// etc. all come back this way, NOT as a non-2xx HTTP status, so checking
+// res.ok alone silently treats real API errors as empty-but-successful data.
 async function fetchComicVine(url: URL) {
   const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
   if (!res.ok) throw new Error(`Comic Vine responded ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  if (typeof data?.status_code === "number" && data.status_code !== 1) {
+    throw new Error(data.error ? `Comic Vine: ${data.error}` : `Comic Vine error (status_code ${data.status_code})`);
+  }
+  return data;
 }
 
 Deno.serve(async (req) => {
@@ -136,7 +149,9 @@ Deno.serve(async (req) => {
         .slice(0, MAX_ISSUES_WITH_CHARACTERS);
 
       const issues: { id: string; issueNumber: string; title: string; characters: { comicvineId: string; name: string }[] }[] = [];
+      let characterFetchWarning: string | null = null;
       for (let i = 0; i < issueRefs.length; i += ISSUE_DETAIL_BATCH_SIZE) {
+        if (i > 0) await delay(BATCH_DELAY_MS);
         const batch = issueRefs.slice(i, i + ISSUE_DETAIL_BATCH_SIZE);
         const detailed = await Promise.all(
           batch.map(async (ref) => {
@@ -153,9 +168,14 @@ Deno.serve(async (req) => {
                 title: ref.title,
                 characters: (detail?.character_credits ?? []).map((c) => ({ comicvineId: String(c.id), name: c.name })),
               };
-            } catch {
+            } catch (err) {
               // A single issue's detail lookup failing shouldn't sink the
-              // whole import — it just imports with no character data.
+              // whole import — it just imports with no character data for
+              // that issue. The first failure's reason is still reported
+              // back so it doesn't fail completely silently.
+              if (!characterFetchWarning) {
+                characterFetchWarning = err instanceof Error ? err.message : "Character lookup failed";
+              }
               return { id: String(ref.id), issueNumber: ref.issueNumber, title: ref.title, characters: [] };
             }
           }),
@@ -163,7 +183,7 @@ Deno.serve(async (req) => {
         issues.push(...detailed);
       }
 
-      return json({ volume: mapVolume(v), issues });
+      return json({ volume: mapVolume(v), issues, characterFetchWarning });
     }
 
     if (resource === "character") {

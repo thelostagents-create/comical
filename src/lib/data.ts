@@ -675,7 +675,7 @@ export async function searchComicVine(query: string): Promise<ComicVineVolume[]>
 
 export async function getComicVineVolume(
   id: string,
-): Promise<{ volume: ComicVineVolume | null; issues: ComicVineIssue[] }> {
+): Promise<{ volume: ComicVineVolume | null; issues: ComicVineIssue[]; characterFetchWarning: string | null }> {
   return invokeComicVine(`resource=volume&id=${encodeURIComponent(id)}`);
 }
 
