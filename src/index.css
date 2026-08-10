@@ -1145,7 +1145,8 @@ h3 {
   z-index: 1;
 }
 
-.favorite-add-tile .avatar {
+.favorite-add-tile .avatar,
+.favorite-add-tile .cover {
   background: none;
   border: 1.5px dashed var(--border);
   color: var(--text-dim);

@@ -3,24 +3,30 @@ import { useAuth } from "../auth";
 import { containsBlockedLanguage } from "../lib/contentFilter";
 import {
   addFavoriteCharacter,
+  addFavoriteSeries,
   createCharacter,
   fetchCharacterRuns,
   fetchFavoriteCharacters,
+  fetchFavoriteSeries,
   fetchFollowers,
   fetchFollowing,
   fetchLibrary,
   follow,
   getProfile,
   MAX_FAVORITE_CHARACTERS,
+  MAX_FAVORITE_SERIES,
   profileStats,
   removeFavoriteCharacter,
+  removeFavoriteSeries,
   searchCharacters,
+  searchSeries,
   unfollow,
   updateProfile,
   type FavoriteCharacterRow,
+  type FavoriteSeriesRow,
   type LibraryRow,
 } from "../lib/data";
-import type { Character, Profile as ProfileType } from "../types";
+import type { Character, Profile as ProfileType, Series } from "../types";
 import { Icon } from "./Icons";
 import ImageField from "./ImageField";
 import Modal from "./Modal";
@@ -42,8 +48,10 @@ export default function Profile({
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [favorites, setFavorites] = useState<FavoriteCharacterRow[]>([]);
+  const [favoriteSeries, setFavoriteSeries] = useState<FavoriteSeriesRow[]>([]);
   const [editing, setEditing] = useState(false);
   const [addingFavorite, setAddingFavorite] = useState(false);
+  const [addingFavoriteSeries, setAddingFavoriteSeries] = useState(false);
   const [openFavorite, setOpenFavorite] = useState<FavoriteCharacterRow | null>(null);
   const [favoriteRuns, setFavoriteRuns] = useState<LibraryRow[] | null>(null);
 
@@ -60,12 +68,17 @@ export default function Profile({
     setFollowingCount(following.length);
     if (!isSelf && me) setIsFollowing(followers.some((f) => f.follower_id === me.id));
 
-    // Fetched separately so a failure here (e.g. migration 0003 not yet
-    // applied) can't leave the rest of the profile stuck on "Loading…".
+    // Fetched separately so a failure here (e.g. migration 0003/0010 not
+    // yet applied) can't leave the rest of the profile stuck on "Loading…".
     try {
       setFavorites(await fetchFavoriteCharacters(userId));
     } catch {
       setFavorites([]);
+    }
+    try {
+      setFavoriteSeries(await fetchFavoriteSeries(userId));
+    } catch {
+      setFavoriteSeries([]);
     }
   }
 
@@ -90,6 +103,11 @@ export default function Profile({
   async function handleRemoveFavorite(id: string) {
     setFavorites((prev) => prev.filter((f) => f.id !== id));
     await removeFavoriteCharacter(id);
+  }
+
+  async function handleRemoveFavoriteSeries(id: string) {
+    setFavoriteSeries((prev) => prev.filter((f) => f.id !== id));
+    await removeFavoriteSeries(id);
   }
 
   async function openFavoriteRuns(fav: FavoriteCharacterRow) {
@@ -162,6 +180,54 @@ export default function Profile({
         )}
       </div>
 
+      <div className="section-title">{isSelf ? "Your favorite comics" : "Favorite comics"}</div>
+      {favoriteSeries.length === 0 && !isSelf && <div className="empty">No favorite comics yet.</div>}
+      {favoriteSeries.length === 0 && isSelf && (
+        <div className="empty">
+          Nothing here yet.
+          <br />
+          Add a comic from your catalog.
+        </div>
+      )}
+      {(favoriteSeries.length > 0 || isSelf) && (
+        <div className="cover-grid">
+          {favoriteSeries.slice(0, MAX_FAVORITE_SERIES).map((fav) => (
+            <div
+              className="cover-tile favorite-tile"
+              key={fav.id}
+              onClick={() => onOpenSeries(fav.series_id)}
+            >
+              {isSelf && (
+                <button
+                  className="favorite-tile-remove"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFavoriteSeries(fav.id);
+                  }}
+                  aria-label={`Remove ${fav.series.title} from favorites`}
+                >
+                  <Icon name="close" size={11} />
+                </button>
+              )}
+              {fav.series.cover_url ? (
+                <img className="cover" src={fav.series.cover_url} alt="" />
+              ) : (
+                <div className="cover">{fav.series.title.slice(0, 2).toUpperCase()}</div>
+              )}
+              <h3>{fav.series.title}</h3>
+            </div>
+          ))}
+          {isSelf && favoriteSeries.length < MAX_FAVORITE_SERIES && (
+            <div className="cover-tile favorite-add-tile" onClick={() => setAddingFavoriteSeries(true)}>
+              <div className="cover">
+                <Icon name="plus" size={18} />
+              </div>
+              <h3>Add</h3>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="section-title">{isSelf ? "Your favorite characters" : "Favorite characters"}</div>
       {favorites.length === 0 && !isSelf && <div className="empty">No favorite characters yet.</div>}
       {favorites.length === 0 && isSelf && (
@@ -226,6 +292,17 @@ export default function Profile({
           onAdded={(fav) => {
             setFavorites((prev) => [...prev, fav]);
             setAddingFavorite(false);
+          }}
+        />
+      )}
+
+      {addingFavoriteSeries && me && (
+        <AddFavoriteSeriesModal
+          existingIds={new Set(favoriteSeries.map((f) => f.series_id))}
+          onClose={() => setAddingFavoriteSeries(false)}
+          onAdded={(fav) => {
+            setFavoriteSeries((prev) => [...prev, fav]);
+            setAddingFavoriteSeries(false);
           }}
         />
       )}
@@ -438,6 +515,82 @@ function AddFavoriteModal({
         </button>
         <button className="btn-primary" disabled={busy || (!selected && !query.trim())} onClick={handleAdd}>
           Add
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function AddFavoriteSeriesModal({
+  existingIds,
+  onClose,
+  onAdded,
+}: {
+  existingIds: Set<string>;
+  onClose: () => void;
+  onAdded: (fav: FavoriteSeriesRow) => void;
+}) {
+  const { profile } = useAuth();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Series[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(async () => setResults(await searchSeries(query)), 200);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const availableResults = results.filter((s) => !existingIds.has(s.id));
+
+  async function handleAdd(series: Series) {
+    if (!profile || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const fav = await addFavoriteSeries(profile.id, series.id);
+      onAdded(fav);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't add that comic.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title="Add a favorite comic" onClose={onClose}>
+      <label className="field">
+        <span>Search your catalog</span>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Saga, Batman, Monstress…"
+          autoFocus
+        />
+      </label>
+      {availableResults.length > 0 && (
+        <div className="card" style={{ marginTop: -6 }}>
+          {availableResults.slice(0, 8).map((s) => (
+            <div className="user-row" key={s.id} onClick={() => handleAdd(s)}>
+              {s.cover_url ? (
+                <img className="cover" style={{ width: 40, height: 56 }} src={s.cover_url} alt="" />
+              ) : (
+                <div className="cover" style={{ width: 40, height: 56 }}>
+                  {s.title.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="name">{s.title}</div>
+              <span className="sub">{s.publisher || "—"}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {query.trim() && availableResults.length === 0 && (
+        <div className="empty">Not yet imported to our catalog.</div>
+      )}
+      {error && <div className="auth-error">{error}</div>}
+      <div className="modal-actions">
+        <button className="btn-secondary" onClick={onClose}>
+          Cancel
         </button>
       </div>
     </Modal>

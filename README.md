@@ -63,6 +63,10 @@ readers to see their activity — a Goodreads-style tracker for comics.
   You're notified when someone reacts to or replies to your Fandom post, or
   follows you (never for your own actions on your own stuff). Tap the bell
   to see recent activity and jump to it; opening the list marks it read.
+- **Favorite comics** — pick up to 9 favorite series on your profile
+  (shown above favorite characters), picked only from series already in
+  the shared catalog — no ad-hoc creation, just search and tap. Tap a
+  favorite to open that series.
 - **Favorite characters** — pick up to 9 favorite characters on your
   profile, each with its own photo (search the catalog or type a new name).
   Tap one to see every comic run you've read that features them, based on
@@ -158,7 +162,9 @@ This app requires a Supabase project — there's no local/offline mode.
    then `supabase/migrations/0008_notifications.sql` (adds `notifications`,
    for the reaction/reply/follow bell), then
    `supabase/migrations/0009_profile_customization.sql` (adds `banner_url`
-   and `fandoms` to `profiles`).
+   and `fandoms` to `profiles`), then
+   `supabase/migrations/0010_favorite_series.sql` (adds `favorite_series`,
+   for the favorite-comics list on a profile).
 3. Auth → Providers: **Email** should be enabled by default.
 4. For the "Forgot password?" flow to work: Authentication → URL
    Configuration → **Redirect URLs**, add the URL the app is served from

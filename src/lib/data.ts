@@ -950,6 +950,44 @@ export async function removeFavoriteCharacter(id: string) {
 }
 
 // ---------------------------------------------------------------------------
+// favorite comics
+// ---------------------------------------------------------------------------
+
+export const MAX_FAVORITE_SERIES = 9;
+
+export interface FavoriteSeriesRow {
+  id: string;
+  series_id: string;
+  series: Series;
+}
+
+export async function fetchFavoriteSeries(userId: string): Promise<FavoriteSeriesRow[]> {
+  const { data, error } = await db()
+    .from("favorite_series")
+    .select("*, series(*)")
+    .eq("user_id", userId)
+    .order("created_at")
+    .limit(MAX_FAVORITE_SERIES);
+  if (error) throw error;
+  return (data ?? []) as unknown as FavoriteSeriesRow[];
+}
+
+export async function addFavoriteSeries(userId: string, seriesId: string): Promise<FavoriteSeriesRow> {
+  const { data, error } = await db()
+    .from("favorite_series")
+    .insert({ user_id: userId, series_id: seriesId })
+    .select("*, series(*)")
+    .single();
+  if (error) throw error;
+  return data as unknown as FavoriteSeriesRow;
+}
+
+export async function removeFavoriteSeries(id: string) {
+  const { error } = await db().from("favorite_series").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
 // character appearances — real per-issue character data pulled from Comic
 // Vine on import (issue_characters), as opposed to guessing from titles.
 // ---------------------------------------------------------------------------

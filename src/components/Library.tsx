@@ -316,7 +316,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             ))}
             {query.trim() && results.length === 0 && (
               <div className="empty">
-                No matches in your catalog.
+                Not yet imported to our catalog.
                 <br />
                 <button
                   type="button"
