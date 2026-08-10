@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { matchingLibraryRows, publishersCompatible } from "./characterMatch";
 import type {
   Character,
   FandomPost,
@@ -94,12 +95,78 @@ export async function createCharacter(input: {
   description: string;
   image_url: string | null;
   publisher: string;
+  comicvine_id?: string | null;
   series_id: string | null;
   created_by: string;
 }): Promise<Character> {
   const { data, error } = await db().from("characters").insert(input).select().single();
   if (error) throw error;
   return data;
+}
+
+// Finds the character Comic Vine says this is (by comicvine_id, falling
+// back to a same-name/compatible-publisher match for characters added
+// before this linking existed), or creates a new one.
+export async function findOrCreateComicVineCharacter(input: {
+  comicvineId: string;
+  name: string;
+  publisher: string;
+  created_by: string;
+}): Promise<Character> {
+  const { data: byId, error: byIdErr } = await db()
+    .from("characters")
+    .select("*")
+    .eq("comicvine_id", input.comicvineId)
+    .maybeSingle();
+  if (byIdErr) throw byIdErr;
+  if (byId) return byId;
+
+  const { data: nameMatches, error: nameErr } = await db()
+    .from("characters")
+    .select("*")
+    .ilike("name", input.name)
+    .is("comicvine_id", null);
+  if (nameErr) throw nameErr;
+  const existing = (nameMatches ?? []).find((c) => publishersCompatible(c.publisher, input.publisher));
+  if (existing) {
+    // Best-effort: tag it with the comicvine_id so future imports find it
+    // directly. RLS only allows the creator to update it, so this silently
+    // no-ops for characters other users made — the name-match fallback
+    // above still finds it correctly next time.
+    try {
+      const { data: updated, error: updateErr } = await db()
+        .from("characters")
+        .update({ comicvine_id: input.comicvineId, publisher: existing.publisher || input.publisher })
+        .eq("id", existing.id)
+        .select()
+        .single();
+      if (updateErr) throw updateErr;
+      return updated;
+    } catch {
+      return existing;
+    }
+  }
+
+  return createCharacter({
+    name: input.name,
+    description: "",
+    image_url: null,
+    publisher: input.publisher,
+    comicvine_id: input.comicvineId,
+    series_id: null,
+    created_by: input.created_by,
+  });
+}
+
+export async function linkIssueCharacters(issueId: string, characterIds: string[]) {
+  if (characterIds.length === 0) return;
+  const { error } = await db()
+    .from("issue_characters")
+    .upsert(
+      characterIds.map((character_id) => ({ issue_id: issueId, character_id })),
+      { onConflict: "issue_id,character_id", ignoreDuplicates: true },
+    );
+  if (error) throw error;
 }
 
 export async function searchShows(query: string): Promise<Show[]> {
@@ -557,6 +624,7 @@ export interface ComicVineIssue {
   id: string;
   issueNumber: string;
   title: string;
+  characters: { comicvineId: string; name: string }[];
 }
 
 async function invokeComicVine<T>(query: string): Promise<T> {
@@ -780,4 +848,59 @@ export async function addFavoriteCharacter(input: {
 export async function removeFavoriteCharacter(id: string) {
   const { error } = await db().from("favorite_characters").delete().eq("id", id);
   if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// character appearances — real per-issue character data pulled from Comic
+// Vine on import (issue_characters), as opposed to guessing from titles.
+// ---------------------------------------------------------------------------
+
+export interface CharacterAppearance {
+  characterId: string;
+  issueId: string;
+  seriesId: string;
+}
+
+export async function fetchReadCharacterAppearances(userId: string): Promise<CharacterAppearance[]> {
+  const { data: readRows, error: readsErr } = await db().from("reads").select("issue_id").eq("user_id", userId);
+  if (readsErr) throw readsErr;
+  const issueIds = [...new Set((readRows ?? []).map((r) => r.issue_id))];
+  if (issueIds.length === 0) return [];
+
+  const { data: links, error: linksErr } = await db()
+    .from("issue_characters")
+    .select("issue_id, character_id, issues!inner(series_id)")
+    .in("issue_id", issueIds);
+  if (linksErr) throw linksErr;
+
+  return ((links ?? []) as unknown as { issue_id: string; character_id: string; issues: { series_id: string } }[]).map(
+    (l) => ({ characterId: l.character_id, issueId: l.issue_id, seriesId: l.issues.series_id }),
+  );
+}
+
+// Every comic run (library row) featuring a character: real issue_characters
+// links where they exist, falling back to name/publisher matching only for
+// series that have no real link data at all.
+export async function fetchCharacterRuns(
+  userId: string,
+  character: Character,
+  library: LibraryRow[],
+): Promise<LibraryRow[]> {
+  const appearances = await fetchReadCharacterAppearances(userId);
+  const exactSeriesIdsForCharacter = new Set(
+    appearances.filter((a) => a.characterId === character.id).map((a) => a.seriesId),
+  );
+  const exactCoveredSeriesIds = new Set(appearances.map((a) => a.seriesId));
+
+  const exactRows = library.filter((row) => exactSeriesIdsForCharacter.has(row.series_id) && row.readCount > 0);
+  const heuristicRows = matchingLibraryRows(character, library).filter(
+    (row) => row.readCount > 0 && !exactCoveredSeriesIds.has(row.series_id),
+  );
+
+  const seen = new Set<string>();
+  return [...exactRows, ...heuristicRows].filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
 }

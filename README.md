@@ -17,22 +17,27 @@ readers to see their activity — a Goodreads-style tracker for comics.
   Characters, and Shows.
 - **Comic Vine search** — when adding a comic, search Comic Vine's real
   database instead of typing everything by hand; picking a result imports
-  the title, publisher, cover art, description, and its full issue list.
-  Optional — requires the `comicvine` edge function (see below).
+  the title, publisher, cover art, description, and its full issue list —
+  plus, for every imported issue, the real characters Comic Vine says
+  appear in it (`character_credits`), auto-creating/linking catalog
+  characters instead of guessing them from the series title. Optional —
+  requires the `comicvine` edge function (see below).
 - **My Journal** — a pinned first tile in your Library with a custom cover
   image. Opens to your reading stats (issues read, series, most-read
   characters) and a running feed of every "blurb" (written review) you've
-  left on a series or issue. Most-read characters matching is
-  publisher-aware — two same-named heroes from different publishers (e.g. a
-  Marvel and a DC character sharing a name) are never blended together —
-  and titles like "Legion" and "Legion Of X" are still recognized as the
-  same character.
+  left on a series or issue. Most-read characters prefers real Comic
+  Vine-verified appearances where they exist, falling back to name/publisher
+  matching only for series that have no real link data — so two same-named
+  heroes from different publishers (e.g. a Marvel and a DC character sharing
+  a name) are never blended together, while titles like "Legion" and
+  "Legion Of X" are still recognized as the same character.
 - **Fandom** — a tweet-style feed: post short updates with `#hashtags`,
   react to any post with 👍 ❤️ 😂 😮 😢, and search hashtags to jump
   straight to everything posted under one.
 - **Favorite characters** — pick up to 9 favorite characters on your
   profile, each with its own photo (search the catalog or type a new name).
-  Tap one to see every comic run you've read that features them.
+  Tap one to see every comic run you've read that features them (real Comic
+  Vine appearances first, name-matched runs filling in the rest).
 - **Social** — find and follow other readers from the Feed tab, browse
   their stats, and see what people you follow are reading and rating.
 - **Light/dark mode** — toggle from the top bar; dark is near-black, light
@@ -109,7 +114,10 @@ This app requires a Supabase project — there's no local/offline mode.
    posts/reactions/hashtags, favorite characters, and a public `images`
    Storage bucket + policies so photos can be uploaded from the app), then
    `supabase/migrations/0004_character_publisher.sql` (adds a `publisher`
-   column to `characters`).
+   column to `characters`), then
+   `supabase/migrations/0005_issue_characters.sql` (adds `comicvine_id` to
+   `characters` and an `issue_characters` link table for real per-issue
+   character data from Comic Vine imports).
 3. Auth → Providers: **Email** should be enabled by default.
 4. **Optional but recommended:** in the SQL editor, run `supabase/seed.sql`
    to pre-populate the catalog with 12 well-known series (Saga, Batman, The
@@ -123,9 +131,12 @@ This app requires a Supabase project — there's no local/offline mode.
 ### Comic Vine search (optional)
 
 Lets "Add a comic" search a real, huge cross-publisher comics database
-instead of only your own crowd-sourced catalog. Skip this and the rest of
-the app works exactly the same — you'll just add series by hand or from
-`seed.sql`.
+instead of only your own crowd-sourced catalog, and pulls in real
+character-per-issue data (Comic Vine's `character_credits`) so most-read
+characters and favorite-character runs don't have to guess from titles.
+Skip this and the rest of the app works exactly the same — you'll just add
+series by hand or from `seed.sql`, and character matching falls back to
+name/publisher guessing.
 
 1. Get a free API key at
    [comicvine.gamespot.com/api](https://comicvine.gamespot.com/api/) (needs
@@ -140,7 +151,9 @@ the app works exactly the same — you'll just add series by hand or from
    ```
 3. That's it — no client-side env vars needed, the function URL is derived
    from your existing Supabase project URL. Comic Vine's free tier is rate
-   limited to 200 requests/hour.
+   limited to 200 requests/hour; each series import now makes 2 upstream
+   Comic Vine requests (volume metadata + issues with character credits)
+   instead of 1.
 
 ### Data model
 
@@ -158,6 +171,12 @@ the app works exactly the same — you'll just add series by hand or from
 - `favorite_characters` links a user to a character on their profile, with
   its own optional `image_url` so a favorite can have a different photo
   than the shared catalog entry. Capped at 9 per user.
+- `issue_characters` links an issue to the characters Comic Vine says
+  appear in it (`character_credits`), populated automatically on import.
+  `characters.comicvine_id` dedupes the same character across separate
+  imports instead of creating a new row every time. Most-read-characters
+  and favorite-character-runs matching always prefers this real data over
+  the name/publisher-matching heuristic for any series that has it.
 
 ## Notes
 

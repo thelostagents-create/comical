@@ -3,6 +3,7 @@ import { useAuth } from "../auth";
 import {
   addFavoriteCharacter,
   createCharacter,
+  fetchCharacterRuns,
   fetchFavoriteCharacters,
   fetchFollowers,
   fetchFollowing,
@@ -18,7 +19,6 @@ import {
   type FavoriteCharacterRow,
   type LibraryRow,
 } from "../lib/data";
-import { matchingLibraryRows } from "../lib/characterMatch";
 import type { Character, Profile as ProfileType } from "../types";
 import { Icon } from "./Icons";
 import ImageField from "./ImageField";
@@ -95,7 +95,7 @@ export default function Profile({
     setOpenFavorite(fav);
     setFavoriteRuns(null);
     const library = await fetchLibrary(userId);
-    setFavoriteRuns(matchingLibraryRows(fav.character, library).filter((row) => row.readCount > 0));
+    setFavoriteRuns(await fetchCharacterRuns(userId, fav.character, library));
   }
 
   if (!target) return <div className="empty">Loading…</div>;

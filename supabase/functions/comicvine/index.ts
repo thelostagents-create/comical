@@ -23,7 +23,13 @@ interface CvVolumeRaw {
   start_year?: string | null;
   count_of_issues?: number | null;
   description?: string | null;
-  issues?: { id: number; issue_number: string; name: string | null }[];
+}
+
+interface CvIssueRaw {
+  id: number;
+  issue_number: string;
+  name: string | null;
+  character_credits?: { id: number; name: string }[];
 }
 
 function stripHtml(html: string): string {
@@ -97,18 +103,39 @@ Deno.serve(async (req) => {
       const id = url.searchParams.get("id")?.trim();
       if (!id) return json({ error: "id is required" }, 400);
 
-      const cvUrl = new URL(`${COMICVINE_BASE}/volume/4050-${id}/`);
-      cvUrl.searchParams.set("api_key", apiKey);
-      cvUrl.searchParams.set("format", "json");
-      cvUrl.searchParams.set(
+      const volumeUrl = new URL(`${COMICVINE_BASE}/volume/4050-${id}/`);
+      volumeUrl.searchParams.set("api_key", apiKey);
+      volumeUrl.searchParams.set("format", "json");
+      volumeUrl.searchParams.set(
         "field_list",
-        "id,name,publisher,image,start_year,count_of_issues,description,issues",
+        "id,name,publisher,image,start_year,count_of_issues,description",
       );
 
-      const data = await fetchComicVine(cvUrl);
-      const v = data.results as CvVolumeRaw | undefined;
-      const issues = (v?.issues ?? [])
-        .map((i) => ({ id: String(i.id), issueNumber: i.issue_number, title: i.name ?? "" }))
+      // Fetched separately from a lightweight `issues` field on the volume
+      // (which Comic Vine doesn't attach character_credits to) — the
+      // `/issues/` list filtered by volume gives us character_credits per
+      // issue, which is the real "who appears in this book" data.
+      const issuesUrl = new URL(`${COMICVINE_BASE}/issues/`);
+      issuesUrl.searchParams.set("api_key", apiKey);
+      issuesUrl.searchParams.set("format", "json");
+      issuesUrl.searchParams.set("filter", `volume:${id}`);
+      issuesUrl.searchParams.set("field_list", "id,issue_number,name,character_credits");
+      issuesUrl.searchParams.set("limit", "100");
+      issuesUrl.searchParams.set("sort", "issue_number:asc");
+
+      const [volumeData, issuesData] = await Promise.all([
+        fetchComicVine(volumeUrl),
+        fetchComicVine(issuesUrl),
+      ]);
+
+      const v = volumeData.results as CvVolumeRaw | undefined;
+      const issues = ((issuesData.results ?? []) as CvIssueRaw[])
+        .map((i) => ({
+          id: String(i.id),
+          issueNumber: i.issue_number,
+          title: i.name ?? "",
+          characters: (i.character_credits ?? []).map((c) => ({ comicvineId: String(c.id), name: c.name })),
+        }))
         .sort((a, b) => parseFloat(a.issueNumber) - parseFloat(b.issueNumber));
 
       return json({ volume: mapVolume(v), issues });

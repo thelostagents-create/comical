@@ -68,6 +68,7 @@ export interface Character {
   description: string;
   image_url: string | null;
   publisher: string;
+  comicvine_id: string | null;
   series_id: string | null;
   created_by: string | null;
   created_at: string;

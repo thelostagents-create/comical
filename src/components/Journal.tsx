@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
-import { fetchLibrary, fetchMyBlurbs, profileStats, searchCharacters, type Blurb } from "../lib/data";
+import { fetchLibrary, fetchMyBlurbs, fetchReadCharacterAppearances, profileStats, searchCharacters, type Blurb } from "../lib/data";
 import { publishersCompatible, titlesRelated } from "../lib/characterMatch";
 import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
 import { timeAgo } from "../lib/format";
@@ -28,10 +28,11 @@ export default function Journal({
   useEffect(() => {
     if (!profile) return;
     (async () => {
-      const [stats, library, myBlurbs] = await Promise.all([
+      const [stats, library, myBlurbs, appearances] = await Promise.all([
         profileStats(profile.id),
         fetchLibrary(profile.id),
         fetchMyBlurbs(profile.id),
+        fetchReadCharacterAppearances(profile.id),
       ]);
       setReadCount(stats.readCount);
       setSeriesCount(stats.seriesCount);
@@ -50,16 +51,41 @@ export default function Journal({
         ]),
       );
 
-      const claimedSeriesIds = new Set<string>();
+      // Real per-issue character data from a Comic Vine import beats
+      // guessing from titles — a series with any of it is never touched by
+      // the name-matching heuristic below, for itself or any other character.
+      const exactCoveredSeriesIds = new Set(appearances.map((a) => a.seriesId));
+      const exactStats = new Map<string, { issuesRead: number; seriesTitle: string }>();
+      for (const a of appearances) {
+        const cur = exactStats.get(a.characterId) ?? {
+          issuesRead: 0,
+          seriesTitle: seriesStatsById.get(a.seriesId)?.title ?? "",
+        };
+        cur.issuesRead += 1;
+        exactStats.set(a.characterId, cur);
+      }
+
+      const claimedSeriesIds = new Set<string>(exactCoveredSeriesIds);
       const allCharacters = await searchCharacters("");
       const catalogChars = allCharacters
         .map((c) => {
-          const linked = c.series_id ? seriesStatsById.get(c.series_id) : undefined;
-          if (linked && c.series_id) claimedSeriesIds.add(c.series_id);
+          // Ground-truth issues (from a Comic Vine import) always count.
+          // Heuristic name-matching then fills in any *other* series that
+          // has no real link data at all, so a character isn't split
+          // between "the verified count" and "the guessed count."
+          const exact = exactStats.get(c.id);
+          let issuesRead = exact?.issuesRead ?? 0;
+          let seriesTitle = exact?.seriesTitle ?? "";
 
-          let issuesRead = linked ? linked.readCount : 0;
-          let seriesTitle = linked ? linked.title : "";
+          const linked =
+            c.series_id && !exactCoveredSeriesIds.has(c.series_id) ? seriesStatsById.get(c.series_id) : undefined;
+          if (linked && c.series_id) {
+            claimedSeriesIds.add(c.series_id);
+            issuesRead += linked.readCount;
+            seriesTitle = seriesTitle || linked.title;
+          }
           for (const [seriesId, stat] of seriesStatsById) {
+            if (exactCoveredSeriesIds.has(seriesId)) continue;
             if (seriesId === c.series_id) continue;
             if (titlesRelated(c.name, stat.title) && publishersCompatible(c.publisher, stat.publisher)) {
               issuesRead += stat.readCount;
@@ -109,6 +135,7 @@ export default function Journal({
           description: "",
           image_url: repCover,
           publisher: repPublisher,
+          comicvine_id: null,
           series_id: cluster[0][0],
           created_by: null,
           created_at: "",

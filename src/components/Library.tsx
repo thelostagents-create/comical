@@ -5,7 +5,9 @@ import {
   createIssue,
   createSeries,
   fetchLibrary,
+  findOrCreateComicVineCharacter,
   getComicVineVolume,
+  linkIssueCharacters,
   searchComicVine,
   searchSeries,
   upsertRating,
@@ -211,14 +213,34 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
         cover_url: volume.imageUrl,
         created_by: profile.id,
       });
+      const characterCache = new Map<string, string>(); // comicvineId -> character id
       for (const issue of issues.slice(0, MAX_IMPORTED_ISSUES)) {
-        await createIssue({
+        const createdIssue = await createIssue({
           series_id: series.id,
           issue_number: issue.issueNumber,
           title: issue.title,
           cover_url: null,
           created_by: profile.id,
         });
+        if (issue.characters.length > 0) {
+          const characterIds = await Promise.all(
+            issue.characters.map(async (c) => {
+              let characterId = characterCache.get(c.comicvineId);
+              if (!characterId) {
+                const character = await findOrCreateComicVineCharacter({
+                  comicvineId: c.comicvineId,
+                  name: c.name,
+                  publisher: volume.publisher,
+                  created_by: profile.id,
+                });
+                characterId = character.id;
+                characterCache.set(c.comicvineId, characterId);
+              }
+              return characterId;
+            }),
+          );
+          await linkIssueCharacters(createdIssue.id, characterIds);
+        }
       }
       setChosen(series);
       setStep("rate");
