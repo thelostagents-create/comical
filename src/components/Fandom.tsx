@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
+import { containsBlockedLanguage } from "../lib/contentFilter";
 import {
   createFandomPost,
   createFandomReply,
@@ -39,9 +40,11 @@ export default function Fandom() {
   const [tagResults, setTagResults] = useState<{ tag: string; count: number }[]>([]);
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
   const [openReplies, setOpenReplies] = useState<Set<string>>(new Set());
   const [repliesByPost, setRepliesByPost] = useState<Record<string, FandomReplyRow[]>>({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replyErrors, setReplyErrors] = useState<Record<string, string>>({});
   const [postingReplyFor, setPostingReplyFor] = useState<string | null>(null);
   const [reactionPickerFor, setReactionPickerFor] = useState<string | null>(null);
 
@@ -75,6 +78,11 @@ export default function Fandom() {
 
   async function handlePost() {
     if (!profile || !body.trim()) return;
+    setPostError(null);
+    if (containsBlockedLanguage(body)) {
+      setPostError("That contains language that's not allowed here.");
+      return;
+    }
     setPosting(true);
     try {
       await createFandomPost({ user_id: profile.id, body: body.trim(), image_url: null });
@@ -133,6 +141,11 @@ export default function Fandom() {
     const text = (replyDrafts[postId] ?? "").trim();
     const postOwnerId = posts?.find((p) => p.id === postId)?.user_id;
     if (!profile || !text || !postOwnerId) return;
+    setReplyErrors((prev) => ({ ...prev, [postId]: "" }));
+    if (containsBlockedLanguage(text)) {
+      setReplyErrors((prev) => ({ ...prev, [postId]: "That contains language that's not allowed here." }));
+      return;
+    }
     setPostingReplyFor(postId);
     try {
       const reply = await createFandomReply({ post_id: postId, user_id: profile.id, body: text, postOwnerId });
@@ -199,11 +212,12 @@ export default function Fandom() {
             <span>Share something</span>
             <textarea
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => { setBody(e.target.value); setPostError(null); }}
               placeholder="What's happening in your fandom? Use #hashtags…"
               maxLength={500}
             />
           </label>
+          {postError && <div className="auth-error">{postError}</div>}
           <div className="modal-actions">
             <button className="btn-primary" disabled={posting || !body.trim()} onClick={handlePost}>
               Post
@@ -307,10 +321,14 @@ export default function Fandom() {
                   )}
                 </div>
               ))}
+              {replyErrors[post.id] && <div className="auth-error">{replyErrors[post.id]}</div>}
               <div className="reply-composer">
                 <input
                   value={replyDrafts[post.id] ?? ""}
-                  onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                  onChange={(e) => {
+                    setReplyDrafts((prev) => ({ ...prev, [post.id]: e.target.value }));
+                    setReplyErrors((prev) => ({ ...prev, [post.id]: "" }));
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && handleReplySubmit(post.id)}
                   placeholder="Write a reply…"
                   maxLength={280}

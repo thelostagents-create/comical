@@ -15,7 +15,6 @@ import type {
   Read,
   ReactionType,
   Series,
-  Show,
 } from "../types";
 
 function db() {
@@ -140,20 +139,6 @@ export async function createCharacter(input: {
   return data;
 }
 
-// Sets a character's permanent catalog photo. RLS only allows the
-// character's creator to do this — for anyone else it throws, since the
-// character was made by someone else's import.
-export async function updateCharacterImage(characterId: string, imageUrl: string | null): Promise<Character> {
-  const { data, error } = await db()
-    .from("characters")
-    .update({ image_url: imageUrl })
-    .eq("id", characterId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
-
 // Finds the character Comic Vine says this is (by comicvine_id, falling
 // back to a same-name/compatible-publisher match for characters added
 // before this linking existed), or creates a new one. `fetchImage: false`
@@ -245,42 +230,6 @@ export async function linkIssueCharacters(issueId: string, characterIds: string[
       { onConflict: "issue_id,character_id", ignoreDuplicates: true },
     );
   if (error) throw error;
-}
-
-export async function searchShows(query: string): Promise<Show[]> {
-  let q = db().from("shows").select("*").order("title");
-  const trimmed = query.trim();
-  if (trimmed)
-    q = q.or(`title.ilike.%${trimmed}%,network.ilike.%${trimmed}%,description.ilike.%${trimmed}%`);
-  const { data, error } = await q.limit(50);
-  if (error) throw error;
-  return data ?? [];
-}
-
-// Default view of Discover's Shows tab before the user types anything —
-// mirrors fetchRecentSeries, so opening the tab doesn't pull the whole
-// catalog. Actually searching still checks everything via searchShows.
-export async function fetchRecentShows(limit = 6): Promise<Show[]> {
-  const { data, error } = await db()
-    .from("shows")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function createShow(input: {
-  title: string;
-  network: string;
-  description: string;
-  image_url: string | null;
-  series_id: string | null;
-  created_by: string;
-}): Promise<Show> {
-  const { data, error } = await db().from("shows").insert(input).select().single();
-  if (error) throw error;
-  return data;
 }
 
 // ---------------------------------------------------------------------------

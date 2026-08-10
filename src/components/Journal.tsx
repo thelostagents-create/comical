@@ -10,6 +10,7 @@ import {
   type Blurb,
   type LibraryRow,
 } from "../lib/data";
+import { getCharacterImageOverride } from "../lib/characterImagePrefs";
 import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
 import { timeAgo } from "../lib/format";
 import type { Character } from "../types";
@@ -123,7 +124,9 @@ export default function Journal({
         </div>
       ) : (
         <div className="character-grid">
-          {topCharacters.map((c) => (
+          {topCharacters.map((c) => {
+            const displayImage = getCharacterImageOverride(c.id) ?? c.image_url;
+            return (
             <div className="character-tile" key={c.id} onClick={() => openCharacterRuns(c)}>
               <button
                 className="character-tile-edit"
@@ -135,8 +138,8 @@ export default function Journal({
               >
                 <Icon name="edit" size={11} />
               </button>
-              {c.image_url ? (
-                <img className="avatar" src={c.image_url} alt="" />
+              {displayImage ? (
+                <img className="avatar" src={displayImage} alt="" />
               ) : (
                 <div className="avatar">{c.name.slice(0, 2).toUpperCase()}</div>
               )}
@@ -146,7 +149,8 @@ export default function Journal({
                 {c.issuesRead} {c.issuesRead === 1 ? "issue" : "issues"}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

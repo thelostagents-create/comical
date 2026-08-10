@@ -19,7 +19,6 @@ import { getJournalCover } from "../lib/journalPrefs";
 import type { LibraryStatus, Series } from "../types";
 import { LIBRARY_STATUS_LABELS } from "../types";
 import { Icon } from "./Icons";
-import ImageField from "./ImageField";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
 import { Toast, useToast } from "./Toast";
@@ -97,10 +96,8 @@ export default function Library({
         {visible.map((row) => (
           <div className="cover-tile" key={row.id} onClick={() => onOpenSeries(row.series_id)}>
             {row.status === "completed" && (
-              <div className="stamp">
-                read
-                <br />
-                <Icon name="check" size={9} />
+              <div className="stamp" aria-label="Read">
+                <Icon name="check" size={14} />
               </div>
             )}
             {row.starred && (
@@ -150,17 +147,13 @@ export default function Library({
   );
 }
 
-type Step = "search" | "create" | "cvsearch" | "rate";
+type Step = "search" | "cvsearch" | "rate";
 
 function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
   const { profile } = useAuth();
   const [step, setStep] = useState<Step>("search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Series[]>([]);
-  const [title, setTitle] = useState("");
-  const [publisher, setPublisher] = useState("");
-  const [description, setDescription] = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
   const [chosen, setChosen] = useState<Series | null>(null);
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
@@ -207,21 +200,6 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
   // years/runs — filtering the already-fetched results client-side costs no
   // extra requests, unlike re-searching with the year baked into the query.
   const visibleCvResults = cvYear.trim() ? cvResults.filter((v) => v.startYear === cvYear.trim()) : cvResults;
-
-  async function handleCreate() {
-    if (!profile || !title.trim()) return;
-    setBusy(true);
-    const series = await createSeries({
-      title: title.trim(),
-      publisher: publisher.trim(),
-      description: description.trim(),
-      cover_url: coverUrl.trim() || null,
-      created_by: profile.id,
-    });
-    setBusy(false);
-    setChosen(series);
-    setStep("rate");
-  }
 
   async function importFromComicVine(volume: ComicVineVolume) {
     if (!profile) return;
@@ -354,9 +332,6 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             <button className="btn-secondary" onClick={() => { setStep("cvsearch"); setCvQuery(query); }}>
               <Icon name="search" size={13} /> Search Comic Vine
             </button>
-            <button className="btn-secondary" onClick={() => { setStep("create"); setTitle(query); }}>
-              <Icon name="plus" size={13} /> Create new series
-            </button>
           </div>
         </>
       )}
@@ -412,32 +387,6 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
           <button className="btn-secondary" onClick={() => setStep("search")}>
             <Icon name="back" size={13} /> Back
           </button>
-        </>
-      )}
-
-      {step === "create" && (
-        <>
-          <label className="field">
-            <span>Title</span>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus required />
-          </label>
-          <label className="field">
-            <span>Publisher</span>
-            <input value={publisher} onChange={(e) => setPublisher(e.target.value)} placeholder="Image, Marvel, DC…" />
-          </label>
-          <ImageField label="Cover image (optional)" value={coverUrl} onChange={setCoverUrl} folder="series" />
-          <label className="field">
-            <span>Description</span>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-          </label>
-          <div className="modal-actions">
-            <button className="btn-secondary" onClick={() => setStep("search")}>
-              Back
-            </button>
-            <button className="btn-primary" disabled={busy || !title.trim()} onClick={handleCreate}>
-              Continue
-            </button>
-          </div>
         </>
       )}
 

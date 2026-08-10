@@ -5,30 +5,34 @@ readers to see their activity — a Goodreads-style tracker for comics.
 
 ## Features
 
-- **Shared catalog** — anyone can add a series, issue, character, or show;
-  the catalog is crowd-sourced and shared across all users.
+- **Shared catalog** — series, issues, and characters are crowd-sourced and
+  shared across all users, primarily populated by Comic Vine imports (see
+  below). Discover and "Add a comic" only let you browse/search the
+  existing catalog or pull a title in from Comic Vine — there's no
+  standalone "create a new series" or "add a character" form (Favorite
+  Characters is the one exception, since a favorite needs *some* character
+  row to point at).
 - **Personal library** — add series to your shelf with a status (Plan to
   Read / Reading / Completed / Dropped), mark individual issues read/unread,
   see per-series progress, and rate + leave a note right when you add a
   comic. Star a series (from its detail page) to pin it to the top of your
   library, marked with a small star badge on its tile. "Add a comic" opens
   showing just the 6 most recently added catalog series — type to search
-  the whole catalog.
+  the whole catalog, or search Comic Vine directly to pull in a title that
+  isn't in the catalog yet.
 - **Ratings & reviews** — 1-5 star ratings with an optional written review,
   on series or individual issues.
-- **Discover** — browse the catalog across three categories: Comics,
-  Characters, and Shows. Comics opens to the 12 most-recently-added series;
-  Characters and Shows open to the 6 most-recently-added (fewer rows to
-  fetch/render before you've typed anything); type to search the full
-  catalog. Tap a character (here or in Journal's most-read characters) to
-  see their **Comic Spotlights** — their top 3 series in the shared
-  catalog by linked-issue count (`issue_characters`, from Comic Vine
-  imports), catalog-wide rather than just what you've personally read. Use
-  the small pencil button on a character's tile to set a permanent photo on
-  the shared catalog record — paste a URL or upload one. Only the
-  character's original creator can do
-  this (row-level security), so it only works for characters you added
-  yourself, e.g. via your own Comic Vine import.
+- **Discover** — browse the catalog across two categories: Comics and
+  Characters. Comics opens to the 12 most-recently-added series; Characters
+  opens to the 6 most-recently-added (fewer rows to fetch/render before
+  you've typed anything); type to search the full catalog. Tap a character
+  (here or in Journal's most-read characters) to see their **Comic
+  Spotlights** — their top 3 series in the shared catalog by linked-issue
+  count (`issue_characters`, from Comic Vine imports), catalog-wide rather
+  than just what you've personally read. Use the small pencil button on a
+  character's tile to set how that character's photo looks *to you* —
+  it's stored on your device only (`localStorage`), never written to the
+  shared catalog, so it never changes what anyone else sees.
 - **Comic Vine search** — when adding a comic, search Comic Vine's real
   database instead of typing everything by hand, with an optional year
   filter for when a title has multiple runs (e.g. several different
@@ -50,6 +54,11 @@ readers to see their activity — a Goodreads-style tracker for comics.
   react to any post with 👍 ❤️ 😂 😮 😢, reply to a post (replies are
   collapsible), and search hashtags to jump straight to everything posted
   under one.
+- **Basic content filter** — posts, replies, and profile bio/fandoms text
+  are checked against a profanity/slur wordlist (the `bad-words` package)
+  before they're allowed to save; blocked text shows an inline error
+  instead of silently posting. Client-side only, so treat it as a
+  deterrent for genuine users rather than abuse-proof moderation.
 - **Notifications** — a bell icon in the top bar with an unread badge.
   You're notified when someone reacts to or replies to your Fandom post, or
   follows you (never for your own actions on your own stuff). Tap the bell
@@ -96,19 +105,21 @@ src/
   lib/
     supabase.ts         # Supabase client
     data.ts              # all reads/writes: series, issues, characters,
-                          # shows, library, reads, ratings, follows, feed,
+                          # library, reads, ratings, follows, feed,
                           # journal blurbs, fandom posts/reactions/hashtags,
-                          # favorite characters
+                          # favorite characters, notifications
     upload.ts             # uploads a File to Supabase Storage, returns its URL
     journalPrefs.ts       # journal cover image preference (localStorage)
+    characterImagePrefs.ts # per-device character photo overrides (localStorage)
+    contentFilter.ts       # profanity/slur check for user-submitted text
     format.ts              # shared display helpers (timeAgo)
   App.tsx               # tab shell (Library / Fandom / Discover / Feed / Profile)
   components/
     AuthGate.tsx         # login/signup screen, gates the app on a session
-    Library.tsx          # your shelf + add-series flow (search/create + rate)
+    Library.tsx          # your shelf + add-series flow (search/Comic Vine + rate)
     Journal.tsx           # pinned "My Journal" — stats, top characters, blurbs
     SeriesDetail.tsx      # series info, status, rating, issue list + add issue
-    Discover.tsx          # browse Comics / Characters / Shows
+    Discover.tsx          # browse Comics / Characters
     Fandom.tsx             # tweet-style posts, reactions, hashtag search
     Feed.tsx                # activity from people you follow + find friends
     Profile.tsx              # your or someone else's profile, favorite characters
@@ -200,8 +211,10 @@ and favorite-character runs will simply stay empty for them.
 
 ### Data model
 
-- `series` / `issues` / `characters` / `shows` are a **shared, crowd-sourced
-  catalog** — any signed-in user can add one, readable by everyone.
+- `series` / `issues` / `characters` are a **shared, crowd-sourced catalog**,
+  readable by everyone. (A `shows` table also exists from an earlier version
+  of the app; it's no longer used by the UI, kept only so existing data
+  isn't dropped.)
 - `library_entries`, `reads`, and `ratings` are **per-user** rows (each row
   is owned by one `user_id`) but are publicly readable, so profiles and the
   feed can show what other people are doing. Row-level security restricts

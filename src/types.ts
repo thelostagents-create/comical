@@ -77,17 +77,6 @@ export interface Character {
   created_at: string;
 }
 
-export interface Show {
-  id: string;
-  title: string;
-  network: string;
-  description: string;
-  image_url: string | null;
-  series_id: string | null;
-  created_by: string | null;
-  created_at: string;
-}
-
 export const LIBRARY_STATUS_LABELS: Record<LibraryStatus, string> = {
   reading: "Reading",
   completed: "Completed",

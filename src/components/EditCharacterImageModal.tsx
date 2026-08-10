@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { updateCharacterImage } from "../lib/data";
+import { getCharacterImageOverride, setCharacterImageOverride } from "../lib/characterImagePrefs";
 import type { Character } from "../types";
 import ImageField from "./ImageField";
 import Modal from "./Modal";
@@ -13,32 +13,26 @@ export default function EditCharacterImageModal({
   onClose: () => void;
   onSaved: (imageUrl: string | null) => void;
 }) {
-  const [url, setUrl] = useState(character.image_url ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [url, setUrl] = useState(getCharacterImageOverride(character.id) ?? character.image_url ?? "");
 
-  async function handleSave() {
-    setBusy(true);
-    setError(null);
-    try {
-      const updated = await updateCharacterImage(character.id, url.trim() || null);
-      onSaved(updated.image_url);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't update this character's photo.");
-    } finally {
-      setBusy(false);
-    }
+  function handleSave() {
+    const trimmed = url.trim() || null;
+    setCharacterImageOverride(character.id, trimmed);
+    onSaved(trimmed);
   }
 
   return (
     <Modal title={`${character.name}'s photo`} onClose={onClose}>
+      <p className="sub" style={{ marginTop: -4 }}>
+        Only changes how {character.name} looks to you on this device — everyone else still
+        sees the catalog photo.
+      </p>
       <ImageField label="Photo" value={url} onChange={setUrl} folder="characters" />
-      {error && <div className="auth-error">{error}</div>}
       <div className="modal-actions">
         <button className="btn-secondary" onClick={onClose}>
           Cancel
         </button>
-        <button className="btn-primary" disabled={busy} onClick={handleSave}>
+        <button className="btn-primary" onClick={handleSave}>
           Save
         </button>
       </div>

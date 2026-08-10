@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
+import { containsBlockedLanguage } from "../lib/contentFilter";
 import {
   addFavoriteCharacter,
   createCharacter,
@@ -276,6 +277,20 @@ function EditProfileModal({
   const [avatarUrl, setAvatarUrl] = useState(initial.avatar_url ?? "");
   const [fandoms, setFandoms] = useState(initial.fandoms);
   const [bio, setBio] = useState(initial.bio);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleSave() {
+    if (containsBlockedLanguage(fandoms) || containsBlockedLanguage(bio)) {
+      setError("That contains language that's not allowed here.");
+      return;
+    }
+    onSaved({
+      bio: bio.trim(),
+      avatar_url: avatarUrl.trim() || null,
+      banner_url: bannerUrl.trim() || null,
+      fandoms: fandoms.trim(),
+    });
+  }
 
   return (
     <Modal title="Edit profile" onClose={onClose}>
@@ -285,30 +300,21 @@ function EditProfileModal({
         <span>Fandoms (comma-separated)</span>
         <input
           value={fandoms}
-          onChange={(e) => setFandoms(e.target.value)}
+          onChange={(e) => { setFandoms(e.target.value); setError(null); }}
           placeholder="marvel, owl house, dc"
           maxLength={140}
         />
       </label>
       <label className="field">
         <span>Bio</span>
-        <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={280} />
+        <textarea value={bio} onChange={(e) => { setBio(e.target.value); setError(null); }} maxLength={280} />
       </label>
+      {error && <div className="auth-error">{error}</div>}
       <div className="modal-actions">
         <button className="btn-secondary" onClick={onClose}>
           Cancel
         </button>
-        <button
-          className="btn-primary"
-          onClick={() =>
-            onSaved({
-              bio: bio.trim(),
-              avatar_url: avatarUrl.trim() || null,
-              banner_url: bannerUrl.trim() || null,
-              fandoms: fandoms.trim(),
-            })
-          }
-        >
+        <button className="btn-primary" onClick={handleSave}>
           Save
         </button>
       </div>
