@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
 import { fetchLibrary, fetchMyBlurbs, profileStats, searchCharacters, type Blurb } from "../lib/data";
+import { publishersCompatible, titlesRelated } from "../lib/characterMatch";
 import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
 import { timeAgo } from "../lib/format";
 import type { Character } from "../types";
@@ -8,32 +9,6 @@ import { Icon } from "./Icons";
 import ImageField from "./ImageField";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
-
-// A character "belongs" to a series either by explicit link, or by name —
-// e.g. a character named "Batman" auto-matches series titled "Batman" or
-// "Batman: Year One", so most-read characters works with no hand-linking.
-// The same relation also merges different books about the same character
-// (e.g. two separate "Batman" books, or "Legion" and "Legion Of X") into a
-// single combined entry.
-function titleKey(title: string): string {
-  return title.trim().toLowerCase().split(/[:\-–—]|\bof\b/i)[0].trim();
-}
-
-function titlesRelated(a: string, b: string): boolean {
-  const ka = titleKey(a);
-  const kb = titleKey(b);
-  return ka.length > 0 && ka === kb;
-}
-
-// Two same-named heroes from different publishers (e.g. Marvel's and DC's
-// takes on a name) should never be blended into one entry. An unset
-// publisher on either side is treated as a wildcard — only an explicit
-// mismatch blocks the match.
-function publishersCompatible(a: string | undefined, b: string | undefined): boolean {
-  const pa = (a ?? "").trim().toLowerCase();
-  const pb = (b ?? "").trim().toLowerCase();
-  return !pa || !pb || pa === pb;
-}
 
 export default function Journal({
   onBack,

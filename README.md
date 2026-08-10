@@ -32,6 +32,7 @@ readers to see their activity — a Goodreads-style tracker for comics.
   straight to everything posted under one.
 - **Favorite characters** — pick up to 9 favorite characters on your
   profile, each with its own photo (search the catalog or type a new name).
+  Tap one to see every comic run you've read that features them.
 - **Social** — find and follow other readers from the Feed tab, browse
   their stats, and see what people you follow are reading and rating.
 - **Light/dark mode** — toggle from the top bar; dark is near-black, light
@@ -70,6 +71,7 @@ src/
                           # journal blurbs, fandom posts/reactions/hashtags,
                           # favorite characters
     upload.ts             # uploads a File to Supabase Storage, returns its URL
+    characterMatch.ts      # name/publisher matching shared by Journal + Profile
     journalPrefs.ts       # journal cover image preference (localStorage)
     format.ts              # shared display helpers (timeAgo)
   App.tsx               # tab shell (Library / Fandom / Discover / Feed / Profile)

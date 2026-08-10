@@ -6,6 +6,7 @@ import {
   fetchFavoriteCharacters,
   fetchFollowers,
   fetchFollowing,
+  fetchLibrary,
   follow,
   getProfile,
   MAX_FAVORITE_CHARACTERS,
@@ -15,7 +16,9 @@ import {
   unfollow,
   updateProfile,
   type FavoriteCharacterRow,
+  type LibraryRow,
 } from "../lib/data";
+import { matchingLibraryRows } from "../lib/characterMatch";
 import type { Character, Profile as ProfileType } from "../types";
 import { Icon } from "./Icons";
 import ImageField from "./ImageField";
@@ -24,6 +27,7 @@ import Modal from "./Modal";
 export default function Profile({
   userId,
   isSelf,
+  onOpenSeries,
 }: {
   userId: string;
   isSelf: boolean;
@@ -39,6 +43,8 @@ export default function Profile({
   const [favorites, setFavorites] = useState<FavoriteCharacterRow[]>([]);
   const [editing, setEditing] = useState(false);
   const [addingFavorite, setAddingFavorite] = useState(false);
+  const [openFavorite, setOpenFavorite] = useState<FavoriteCharacterRow | null>(null);
+  const [favoriteRuns, setFavoriteRuns] = useState<LibraryRow[] | null>(null);
 
   async function reload() {
     const [p, s, followers, following] = await Promise.all([
@@ -83,6 +89,13 @@ export default function Profile({
   async function handleRemoveFavorite(id: string) {
     setFavorites((prev) => prev.filter((f) => f.id !== id));
     await removeFavoriteCharacter(id);
+  }
+
+  async function openFavoriteRuns(fav: FavoriteCharacterRow) {
+    setOpenFavorite(fav);
+    setFavoriteRuns(null);
+    const library = await fetchLibrary(userId);
+    setFavoriteRuns(matchingLibraryRows(fav.character, library).filter((row) => row.readCount > 0));
   }
 
   if (!target) return <div className="empty">Loading…</div>;
@@ -144,11 +157,14 @@ export default function Profile({
       {(favorites.length > 0 || isSelf) && (
         <div className="character-grid">
           {favorites.slice(0, MAX_FAVORITE_CHARACTERS).map((fav) => (
-            <div className="character-tile favorite-tile" key={fav.id}>
+            <div className="character-tile favorite-tile" key={fav.id} onClick={() => openFavoriteRuns(fav)}>
               {isSelf && (
                 <button
                   className="favorite-tile-remove"
-                  onClick={() => handleRemoveFavorite(fav.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFavorite(fav.id);
+                  }}
                   aria-label={`Remove ${fav.character.name} from favorites`}
                 >
                   <Icon name="close" size={11} />
@@ -195,6 +211,37 @@ export default function Profile({
             setAddingFavorite(false);
           }}
         />
+      )}
+
+      {openFavorite && (
+        <Modal title={`${openFavorite.character.name}'s runs`} onClose={() => setOpenFavorite(null)}>
+          {favoriteRuns === null && <div className="empty">Loading…</div>}
+          {favoriteRuns !== null && favoriteRuns.length === 0 && (
+            <div className="empty">No comic runs read with {openFavorite.character.name} yet.</div>
+          )}
+          {favoriteRuns?.map((row) => (
+            <div
+              className="card series-row"
+              key={row.id}
+              onClick={() => {
+                setOpenFavorite(null);
+                onOpenSeries(row.series_id);
+              }}
+            >
+              {row.series.cover_url ? (
+                <img className="cover" src={row.series.cover_url} alt="" />
+              ) : (
+                <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
+              )}
+              <div className="meta">
+                <h3>{row.series.title}</h3>
+                <div className="sub">
+                  {row.series.publisher || "—"} · {row.readCount}/{row.issueCount || "–"} read
+                </div>
+              </div>
+            </div>
+          ))}
+        </Modal>
       )}
     </div>
   );
