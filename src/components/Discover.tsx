@@ -147,6 +147,15 @@ function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onC
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [busy, setBusy] = useState(false);
+  const [seriesQuery, setSeriesQuery] = useState("");
+  const [seriesResults, setSeriesResults] = useState<Series[]>([]);
+  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
+
+  useEffect(() => {
+    if (selectedSeries) return;
+    const t = setTimeout(async () => setSeriesResults(await searchSeries(seriesQuery)), 200);
+    return () => clearTimeout(t);
+  }, [seriesQuery, selectedSeries]);
 
   async function handleSubmit() {
     if (!profile || !name.trim()) return;
@@ -155,7 +164,7 @@ function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onC
       name: name.trim(),
       description: description.trim(),
       image_url: imageUrl.trim() || null,
-      series_id: null,
+      series_id: selectedSeries?.id ?? null,
       created_by: profile.id,
     });
     setBusy(false);
@@ -168,6 +177,37 @@ function CreateCharacterModal({ onClose, onCreated }: { onClose: () => void; onC
         <span>Name</span>
         <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       </label>
+
+      <div className="field">
+        <span>Series (optional)</span>
+        {selectedSeries ? (
+          <div className="user-row" style={{ padding: 0 }}>
+            <div className="name">{selectedSeries.title}</div>
+            <button className="btn-secondary" onClick={() => setSelectedSeries(null)}>
+              Change
+            </button>
+          </div>
+        ) : (
+          <>
+            <input
+              value={seriesQuery}
+              onChange={(e) => setSeriesQuery(e.target.value)}
+              placeholder="Search series to link…"
+            />
+            {seriesQuery.trim() && seriesResults.length > 0 && (
+              <div className="card" style={{ marginTop: 8 }}>
+                {seriesResults.slice(0, 6).map((s) => (
+                  <div className="user-row" key={s.id} onClick={() => setSelectedSeries(s)}>
+                    <div className="name">{s.title}</div>
+                    <span className="sub">{s.publisher || "—"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       <label className="field">
         <span>Image URL (optional)</span>
         <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" />
