@@ -82,31 +82,33 @@ export default function Journal({
         <div className="page-title" style={{ margin: 0 }}>My Journal</div>
       </div>
 
-      <div className="journal-cover">
-        {cover ? (
-          <img src={cover} alt="" />
-        ) : (
-          <div className="journal-cover-placeholder">
-            <Icon name="sparkle" size={26} />
-          </div>
-        )}
-        <button className="icon-btn journal-cover-edit" onClick={() => setShowCoverModal(true)} aria-label="Edit journal cover">
-          <Icon name="edit" size={15} />
-        </button>
-      </div>
+      <div className="journal-header">
+        <div className="journal-cover">
+          {cover ? (
+            <img src={cover} alt="" />
+          ) : (
+            <div className="journal-cover-placeholder">
+              <Icon name="sparkle" size={26} />
+            </div>
+          )}
+          <button className="icon-btn journal-cover-edit" onClick={() => setShowCoverModal(true)} aria-label="Edit journal cover">
+            <Icon name="edit" size={15} />
+          </button>
+        </div>
 
-      <div className="stats-row">
-        <div className="stat">
-          <b>{readCount}</b>
-          <span>Issues read</span>
-        </div>
-        <div className="stat">
-          <b>{seriesCount}</b>
-          <span>Series</span>
-        </div>
-        <div className="stat">
-          <b>{blurbs?.length ?? 0}</b>
-          <span>Blurbs</span>
+        <div className="stats-row journal-stats">
+          <div className="stat">
+            <b>{readCount}</b>
+            <span>Issues read</span>
+          </div>
+          <div className="stat">
+            <b>{seriesCount}</b>
+            <span>Series</span>
+          </div>
+          <div className="stat">
+            <b>{blurbs?.length ?? 0}</b>
+            <span>Blurbs</span>
+          </div>
         </div>
       </div>
 

@@ -783,33 +783,6 @@ h3 {
   font-size: 13px;
 }
 
-.avatar-stack {
-  display: flex;
-  align-items: center;
-}
-
-.avatar-stack .avatar {
-  width: 30px;
-  height: 30px;
-  font-size: 10px;
-  margin-right: -10px;
-  border: 2px solid var(--card);
-}
-
-.avatar-stack .avatar-more {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--bg-alt);
-  border: 2px solid var(--card);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-left: 4px;
-}
-
 .stats-row {
   display: flex;
   gap: 22px;
@@ -1195,14 +1168,33 @@ h3 {
   border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 
+.journal-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
 .journal-cover {
   position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
+  width: 120px;
+  flex-shrink: 0;
+  aspect-ratio: 2 / 3;
   border-radius: var(--radius);
   overflow: hidden;
-  margin-bottom: 4px;
   border: 1px solid var(--border);
+}
+
+.stats-row.journal-stats {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 6px 0;
+  padding-top: 2px;
+}
+
+.stats-row.journal-stats .stat {
+  text-align: left;
 }
 
 .journal-cover img {

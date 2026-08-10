@@ -6,7 +6,6 @@ import {
   fetchMyRating,
   fetchRatingSummary,
   fetchSeriesReaderCount,
-  fetchSeriesReaders,
   getLibraryEntry,
   getProfile,
   getSeries,
@@ -48,20 +47,18 @@ export default function SeriesDetail({
   const [showRate, setShowRate] = useState(false);
   const [showAddIssue, setShowAddIssue] = useState(false);
   const [addedBy, setAddedBy] = useState<Profile | null>(null);
-  const [readers, setReaders] = useState<Profile[]>([]);
   const [readerCount, setReaderCount] = useState(0);
   const { message, show } = useToast();
 
   async function reload() {
     if (!profile) return;
-    const [s, i, e, reads, sum, mine, readerList, readerTotal] = await Promise.all([
+    const [s, i, e, reads, sum, mine, readerTotal] = await Promise.all([
       getSeries(seriesId),
       listIssues(seriesId),
       getLibraryEntry(profile.id, seriesId),
       listMyReadsForSeries(profile.id, seriesId),
       fetchRatingSummary("series", seriesId),
       fetchMyRating(profile.id, "series", seriesId),
-      fetchSeriesReaders(seriesId),
       fetchSeriesReaderCount(seriesId),
     ]);
     setSeries(s);
@@ -74,7 +71,6 @@ export default function SeriesDetail({
       setMyReview(mine.review);
     }
     setAddedBy(s.created_by ? await getProfile(s.created_by) : null);
-    setReaders(readerList);
     setReaderCount(readerTotal);
   }
 
@@ -170,18 +166,8 @@ export default function SeriesDetail({
         </div>
 
         {readerCount > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
-            <div className="avatar-stack">
-              {readers.slice(0, 4).map((r) => (
-                <div key={r.id} className="avatar" onClick={() => onOpenProfile(r.id)}>
-                  {r.username.slice(0, 2).toUpperCase()}
-                </div>
-              ))}
-              {readerCount > 4 && <div className="avatar-more">+{readerCount - 4}</div>}
-            </div>
-            <span className="sub">
-              {readerCount} {readerCount === 1 ? "Reader" : "Readers"}
-            </span>
+          <div className="sub" style={{ marginTop: 14 }}>
+            {readerCount} {readerCount === 1 ? "Reader" : "Readers"}
           </div>
         )}
 
