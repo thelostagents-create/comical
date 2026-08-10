@@ -211,7 +211,7 @@ export default function SeriesDetail({
         {issues.map((issue) => (
           <div className="issue-row" key={issue.id}>
             <span className="num">#{issue.issue_number}</span>
-            <span className="title">{issue.title || "Untitled"}</span>
+            <span className="title">{issue.title || `Issue ${issue.issue_number}`}</span>
             <button
               className={`read-toggle ${readIds.has(issue.id) ? "read" : ""}`}
               onClick={() => toggleRead(issue.id)}

@@ -18,10 +18,9 @@ function titleKey(title: string): string {
 }
 
 function titlesRelated(a: string, b: string): boolean {
-  const na = a.trim().toLowerCase();
-  const nb = b.trim().toLowerCase();
-  if (!na || !nb) return false;
-  return titleKey(a) === titleKey(b) || na.includes(nb) || nb.includes(na);
+  const ka = titleKey(a);
+  const kb = titleKey(b);
+  return ka.length > 0 && ka === kb;
 }
 
 export default function Journal({
