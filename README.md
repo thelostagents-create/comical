@@ -85,10 +85,10 @@ readers to see their activity — a Goodreads-style tracker for comics.
   posting/replying) or ban (blocks using the app) any user. There's no
   in-app way to grant the first admin — see the migration notes below.
 - **Light/dark mode** — toggle from the top bar; dark is near-black, light
-  is a warm beige/cream. Each mode remembers its own accent color.
+  is a warm beige/cream. Defaults to light mode for new visitors.
 - **Custom accent color** — pick your own accent color (presets or a hex
-  code) from the palette icon in the top bar; it's stored per-device, per
-  mode (dark defaults to blue, light defaults to a cotton-candy pink).
+  code) from the palette icon in the top bar; it's stored per-device and
+  stays the same across both light and dark mode (defaults to blue).
 - **Accounts** — real email/password auth via Supabase, with a unique
   username per user and a "Forgot password?" email-reset flow.
 
@@ -123,7 +123,7 @@ enabled once DNS has propagated (can take up to a day, usually much less).
 ```
 src/
   types.ts             # domain types
-  theme.ts              # light/dark mode + per-mode accent color (localStorage)
+  theme.ts              # light/dark mode + accent color (localStorage)
   auth.tsx             # auth context (session + profile) and sign up/in/out
   lib/
     supabase.ts         # Supabase client

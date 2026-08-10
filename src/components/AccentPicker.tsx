@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { ACCENT_PRESETS, getStoredAccent, getThemeMode, isValidHex, setStoredAccent } from "../theme";
+import { ACCENT_PRESETS, getStoredAccent, isValidHex, setStoredAccent } from "../theme";
 import Modal from "./Modal";
 
 export default function AccentPicker({ onClose }: { onClose: () => void }) {
-  const mode = getThemeMode();
-  const [current, setCurrent] = useState(getStoredAccent(mode));
+  const [current, setCurrent] = useState(getStoredAccent());
   const [hexInput, setHexInput] = useState(current);
 
   function choose(hex: string) {
     setCurrent(hex);
     setHexInput(hex);
-    setStoredAccent(hex, mode);
+    setStoredAccent(hex);
   }
 
   function applyCustom() {

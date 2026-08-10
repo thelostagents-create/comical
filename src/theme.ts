@@ -12,13 +12,9 @@ export const ACCENT_PRESETS = [
 ];
 
 const MODE_KEY = "comical:theme-mode";
-const ACCENT_KEY_PREFIX = "comical:accent:";
+const ACCENT_KEY = "comical:accent";
 const DEFAULT_MODE: ThemeMode = "light";
-
-const DEFAULT_ACCENT_BY_MODE: Record<ThemeMode, string> = {
-  dark: "#5b8def",
-  light: "#ff9ecb",
-};
+const DEFAULT_ACCENT = "#5b8def";
 
 function relativeLuminance(hex: string): number {
   const c = hex.replace("#", "");
@@ -50,17 +46,17 @@ export function getThemeMode(): ThemeMode {
   }
 }
 
-export function getStoredAccent(mode: ThemeMode): string {
+export function getStoredAccent(): string {
   try {
-    return localStorage.getItem(ACCENT_KEY_PREFIX + mode) || DEFAULT_ACCENT_BY_MODE[mode];
+    return localStorage.getItem(ACCENT_KEY) || DEFAULT_ACCENT;
   } catch {
-    return DEFAULT_ACCENT_BY_MODE[mode];
+    return DEFAULT_ACCENT;
   }
 }
 
-export function setStoredAccent(hex: string, mode: ThemeMode) {
+export function setStoredAccent(hex: string) {
   try {
-    localStorage.setItem(ACCENT_KEY_PREFIX + mode, hex);
+    localStorage.setItem(ACCENT_KEY, hex);
   } catch {
     // ignore storage failures (private browsing, etc.)
   }
@@ -69,7 +65,7 @@ export function setStoredAccent(hex: string, mode: ThemeMode) {
 
 export function applyThemeMode(mode: ThemeMode) {
   document.documentElement.dataset.theme = mode;
-  applyAccent(getStoredAccent(mode));
+  applyAccent(getStoredAccent());
 }
 
 export function setThemeMode(mode: ThemeMode) {
