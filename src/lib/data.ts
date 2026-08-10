@@ -533,12 +533,6 @@ export async function fetchMyBlurbs(userId: string): Promise<Blurb[]> {
   }));
 }
 
-export async function getCharactersBySeriesIds(seriesIds: string[]): Promise<Character[]> {
-  if (seriesIds.length === 0) return [];
-  const { data, error } = await db().from("characters").select("*").in("series_id", seriesIds).limit(12);
-  if (error) throw error;
-  return data ?? [];
-}
 
 // ---------------------------------------------------------------------------
 // Comic Vine (external catalog search, via the "comicvine" edge function)

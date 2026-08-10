@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
-import {
-  fetchLibrary,
-  fetchMyBlurbs,
-  getCharactersBySeriesIds,
-  profileStats,
-  type Blurb,
-} from "../lib/data";
+import { fetchLibrary, fetchMyBlurbs, profileStats, searchCharacters, type Blurb } from "../lib/data";
 import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
 import { timeAgo } from "../lib/format";
 import type { Character } from "../types";
 import { Icon } from "./Icons";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
+
+// A character "belongs" to a series either by explicit link, or by name —
+// e.g. a character named "Batman" auto-matches a series titled "Batman",
+// so most-read characters works without hand-linking every one.
+function nameMatchesTitle(name: string, title: string): boolean {
+  const n = name.trim().toLowerCase();
+  const t = title.trim().toLowerCase();
+  return n.length > 0 && t.length > 0 && (t.includes(n) || n.includes(t));
+}
 
 export default function Journal({
   onBack,
@@ -41,20 +44,30 @@ export default function Journal({
       setSeriesCount(stats.seriesCount);
       setBlurbs(myBlurbs);
 
-      const topRows = library
-        .filter((row) => row.readCount > 0)
-        .sort((a, b) => b.readCount - a.readCount)
-        .slice(0, 5);
+      const readRows = library.filter((row) => row.readCount > 0);
       const seriesStatsById = new Map(
-        topRows.map((row) => [row.series_id, { readCount: row.readCount, title: row.series.title }]),
+        readRows.map((row) => [row.series_id, { readCount: row.readCount, title: row.series.title }]),
       );
-      const chars = await getCharactersBySeriesIds(topRows.map((row) => row.series_id));
-      const charsWithStats = chars
+
+      const allCharacters = await searchCharacters("");
+      const charsWithStats = allCharacters
         .map((c) => {
-          const stats = c.series_id ? seriesStatsById.get(c.series_id) : undefined;
-          return { ...c, issuesRead: stats?.readCount ?? 0, seriesTitle: stats?.title ?? "" };
+          const linked = c.series_id ? seriesStatsById.get(c.series_id) : undefined;
+          if (linked) return { ...c, issuesRead: linked.readCount, seriesTitle: linked.title };
+
+          let issuesRead = 0;
+          let seriesTitle = "";
+          for (const stat of seriesStatsById.values()) {
+            if (nameMatchesTitle(c.name, stat.title)) {
+              issuesRead += stat.readCount;
+              seriesTitle = seriesTitle || stat.title;
+            }
+          }
+          return { ...c, issuesRead, seriesTitle };
         })
-        .sort((a, b) => b.issuesRead - a.issuesRead);
+        .filter((c) => c.issuesRead > 0)
+        .sort((a, b) => b.issuesRead - a.issuesRead)
+        .slice(0, 6);
       setTopCharacters(charsWithStats);
     })();
   }, [profile]);
