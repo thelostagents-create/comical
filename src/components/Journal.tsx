@@ -9,12 +9,19 @@ import Modal from "./Modal";
 import RatingStars from "./RatingStars";
 
 // A character "belongs" to a series either by explicit link, or by name —
-// e.g. a character named "Batman" auto-matches a series titled "Batman",
-// so most-read characters works without hand-linking every one.
-function nameMatchesTitle(name: string, title: string): boolean {
-  const n = name.trim().toLowerCase();
-  const t = title.trim().toLowerCase();
-  return n.length > 0 && t.length > 0 && (t.includes(n) || n.includes(t));
+// e.g. a character named "Batman" auto-matches series titled "Batman" or
+// "Batman: Year One", so most-read characters works with no hand-linking.
+// The same relation also merges different books about the same character
+// (e.g. two separate "Batman" books) into a single combined entry.
+function titleKey(title: string): string {
+  return title.trim().toLowerCase().split(/[:\-–—]/)[0].trim();
+}
+
+function titlesRelated(a: string, b: string): boolean {
+  const na = a.trim().toLowerCase();
+  const nb = b.trim().toLowerCase();
+  if (!na || !nb) return false;
+  return titleKey(a) === titleKey(b) || na.includes(nb) || nb.includes(na);
 }
 
 export default function Journal({
@@ -57,15 +64,13 @@ export default function Journal({
       const catalogChars = allCharacters
         .map((c) => {
           const linked = c.series_id ? seriesStatsById.get(c.series_id) : undefined;
-          if (linked && c.series_id) {
-            claimedSeriesIds.add(c.series_id);
-            return { ...c, issuesRead: linked.readCount, seriesTitle: linked.title };
-          }
+          if (linked && c.series_id) claimedSeriesIds.add(c.series_id);
 
-          let issuesRead = 0;
-          let seriesTitle = "";
+          let issuesRead = linked ? linked.readCount : 0;
+          let seriesTitle = linked ? linked.title : "";
           for (const [seriesId, stat] of seriesStatsById) {
-            if (nameMatchesTitle(c.name, stat.title)) {
+            if (seriesId === c.series_id) continue;
+            if (titlesRelated(c.name, stat.title)) {
               issuesRead += stat.readCount;
               seriesTitle = seriesTitle || stat.title;
               claimedSeriesIds.add(seriesId);
@@ -77,20 +82,42 @@ export default function Journal({
 
       // Any read series with no matching character in the catalog still
       // shows up here, standing in as its own "character" — so this section
-      // works with zero setup, no need to add characters by hand.
-      const impliedChars = [...seriesStatsById]
-        .filter(([seriesId]) => !claimedSeriesIds.has(seriesId))
-        .map(([seriesId, stat]) => ({
-          id: `series:${seriesId}`,
-          name: stat.title,
+      // works with zero setup, no need to add characters by hand. Different
+      // books about the same character (e.g. two "Batman" series) merge into
+      // one entry instead of showing up separately.
+      const unclaimed = [...seriesStatsById].filter(([seriesId]) => !claimedSeriesIds.has(seriesId));
+      const grouped = new Set<string>();
+      const impliedChars: (Character & { issuesRead: number; seriesTitle: string })[] = [];
+      for (const [seriesId, stat] of unclaimed) {
+        if (grouped.has(seriesId)) continue;
+        const cluster = [[seriesId, stat] as const];
+        grouped.add(seriesId);
+        let growing = true;
+        while (growing) {
+          growing = false;
+          for (const [otherId, otherStat] of unclaimed) {
+            if (grouped.has(otherId)) continue;
+            if (cluster.some(([, s]) => titlesRelated(s.title, otherStat.title))) {
+              cluster.push([otherId, otherStat]);
+              grouped.add(otherId);
+              growing = true;
+            }
+          }
+        }
+        const repTitle = cluster.reduce((shortest, [, s]) => (s.title.length < shortest.length ? s.title : shortest), cluster[0][1].title);
+        const repCover = cluster.find(([, s]) => s.coverUrl)?.[1].coverUrl ?? null;
+        impliedChars.push({
+          id: `series:${cluster[0][0]}`,
+          name: repTitle,
           description: "",
-          image_url: stat.coverUrl,
-          series_id: seriesId,
+          image_url: repCover,
+          series_id: cluster[0][0],
           created_by: null,
           created_at: "",
-          issuesRead: stat.readCount,
-          seriesTitle: stat.title,
-        }));
+          issuesRead: cluster.reduce((sum, [, s]) => sum + s.readCount, 0),
+          seriesTitle: repTitle,
+        });
+      }
 
       const charsWithStats = [...catalogChars, ...impliedChars]
         .sort((a, b) => b.issuesRead - a.issuesRead)
