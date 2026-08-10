@@ -99,7 +99,8 @@ export default function Library({
             {row.status === "completed" && (
               <div className="stamp">
                 read
-                <br />★
+                <br />
+                <Icon name="check" size={9} />
               </div>
             )}
             {row.starred && (
