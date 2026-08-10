@@ -374,20 +374,25 @@ h3 {
 
 .cover-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
 .cover-tile {
   cursor: pointer;
   position: relative;
+  min-width: 0;
 }
 
 .cover-tile .cover {
+  display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 2 / 3;
   border-radius: 8px;
+  object-fit: cover;
+  object-position: center;
+  overflow: hidden;
 }
 
 .cover-tile h3 {
@@ -421,21 +426,26 @@ h3 {
 
 .character-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px 10px;
 }
 
 .character-tile {
   cursor: pointer;
   text-align: center;
+  min-width: 0;
 }
 
 .character-tile .avatar {
+  display: block;
   width: 100%;
   aspect-ratio: 1;
   height: auto;
   font-size: 15px;
   border-radius: 22%;
+  object-fit: cover;
+  object-position: center;
+  overflow: hidden;
 }
 
 .character-tile h3 {
