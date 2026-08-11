@@ -37,11 +37,15 @@ readers to see their activity — a Goodreads-style tracker for comics.
   database instead of typing everything by hand, with an optional year
   filter for when a title has multiple runs (e.g. several different
   "Batman" volumes across decades); picking a result imports the title,
-  publisher, cover art, description, and its full issue list — plus, for
-  every imported issue, the real characters Comic Vine says appear in it
-  (`character_credits`), auto-creating/linking catalog characters and
-  pulling in a photo for any newly-created one. Optional —
-  requires the `comicvine` edge function (see below).
+  publisher, start year, cover art, description, and its full issue list —
+  plus, for every imported issue, the real characters Comic Vine says
+  appear in it (`character_credits`), auto-creating/linking catalog
+  characters and pulling in a photo for any newly-created one. Optional —
+  requires the `comicvine` edge function (see below). The start year shows
+  next to the publisher everywhere a series is listed (catalog search,
+  Discover, a series page), so same-titled runs from different years are
+  easy to tell apart. There's no manual "add issue" — issues only come in
+  via a Comic Vine import.
 - **My Journal** — a pinned first tile in your Library with a custom cover
   image. Opens to your reading stats (issues read, series, most-read
   characters) and a running feed of every "blurb" (written review) you've
@@ -51,10 +55,13 @@ readers to see their activity — a Goodreads-style tracker for comics.
   something you've read, no guessing from series titles. Tap one to see
   every comic run you've read featuring them, 3 at a time with up/down
   buttons to page through the rest. An "everything you've read" section at
-  the bottom lists every issue you've marked read, most-recent first —
-  collapsed by default and only fetched when you tap "Show", and capped at
-  your 100 most-recently-read issues, so it costs nothing on a normal
-  Journal visit and never turns into an unbounded fetch for a heavy reader.
+  the bottom lists every issue you've marked read, most-recent first,
+  condensing a run of consecutive same-series reads into one "Issues X–Y"
+  row dated to the most recent read in that run. Collapsed by default and
+  only fetched when you tap "Show", loaded 100 at a time with a "Show 100
+  more" button up to a hard cap of 500 — so a normal Journal visit costs
+  nothing, and even paging all the way through never turns into a single
+  unbounded fetch for a heavy reader.
 - **Fandom** — a tweet-style feed: post short updates with `#hashtags`,
   react to any post with 👍 ❤️ 😂 😮 😢, reply to a post (replies are
   collapsible), and search hashtags to jump straight to everything posted
@@ -73,9 +80,9 @@ readers to see their activity — a Goodreads-style tracker for comics.
   follows you (never for your own actions on your own stuff). Tap the bell
   to see recent activity and jump to it; opening the list marks it read.
 - **Favorite comics** — pick up to 9 favorite series on your profile
-  (shown above favorite characters), picked only from series already in
-  the shared catalog — no ad-hoc creation, just search and tap. Tap a
-  favorite to open that series.
+  (shown above favorite characters), picked only from comics already in
+  *your own library* (not the whole shared catalog) — search and tap, no
+  ad-hoc creation. Tap a favorite to open that series.
 - **Favorite characters** — pick up to 9 favorite characters on your
   profile, each with its own photo (search the catalog or type a new name).
   Tap one to see every comic run you've read that features them (3 at a
@@ -198,7 +205,9 @@ This app requires a Supabase project — there's no local/offline mode.
    `supabase/migrations/0012_nickname.sql` (adds `nickname` to `profiles`),
    then `supabase/migrations/0013_fandom_rate_limit.sql` (adds a
    restrictive insert policy capping Fandom posts/replies at 5 per
-   rolling 60 seconds, per person).
+   rolling 60 seconds, per person), then
+   `supabase/migrations/0014_series_start_year.sql` (adds `start_year` to
+   `series`).
 3. **To use the admin panel**, make yourself an admin once via the SQL
    editor (there's no in-app way to grant the first admin):
    ```sql

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../auth";
 import {
   addToLibrary,
-  createIssue,
   fetchMyRating,
   fetchRatingSummary,
   fetchSeriesReaderCount,
@@ -45,7 +44,6 @@ export default function SeriesDetail({
   const [myRating, setMyRating] = useState(0);
   const [myReview, setMyReview] = useState("");
   const [showRate, setShowRate] = useState(false);
-  const [showAddIssue, setShowAddIssue] = useState(false);
   const [addedBy, setAddedBy] = useState<Profile | null>(null);
   const [readerCount, setReaderCount] = useState(0);
   const { message, show } = useToast();
@@ -149,7 +147,10 @@ export default function SeriesDetail({
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="sub">{series.publisher || "Unknown publisher"}</div>
+            <div className="sub">
+              {series.publisher || "Unknown publisher"}
+              {series.start_year ? ` · ${series.start_year}` : ""}
+            </div>
             {series.description && <p style={{ fontSize: 13, color: "var(--text-dim)", margin: "6px 0 0" }}>{series.description}</p>}
             <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
               <RatingStars value={summary.average ? Math.round(summary.average) : 0} size={14} />
@@ -201,13 +202,8 @@ export default function SeriesDetail({
         </div>
       </div>
 
-      <div className="section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>
-          issues {issues.length > 0 && `· ${readCount}/${issues.length} read`}
-        </span>
-        <button className="btn-link" onClick={() => setShowAddIssue(true)}>
-          + Add issue
-        </button>
+      <div className="section-title">
+        issues {issues.length > 0 && `· ${readCount}/${issues.length} read`}
       </div>
 
       <div className="card">
@@ -247,77 +243,6 @@ export default function SeriesDetail({
         </Modal>
       )}
 
-      {showAddIssue && (
-        <AddIssueModal
-          seriesId={seriesId}
-          nextNumber={String(issues.length + 1)}
-          onClose={() => setShowAddIssue(false)}
-          onAdded={() => {
-            setShowAddIssue(false);
-            reload();
-          }}
-        />
-      )}
     </div>
-  );
-}
-
-function AddIssueModal({
-  seriesId,
-  nextNumber,
-  onClose,
-  onAdded,
-}: {
-  seriesId: string;
-  nextNumber: string;
-  onClose: () => void;
-  onAdded: () => void;
-}) {
-  const { profile } = useAuth();
-  const [issueNumber, setIssueNumber] = useState(nextNumber);
-  const [title, setTitle] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit() {
-    if (!profile || !issueNumber.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await createIssue({
-        series_id: seriesId,
-        issue_number: issueNumber.trim(),
-        title: title.trim(),
-        cover_url: null,
-        created_by: profile.id,
-      });
-      onAdded();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't add that issue.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal title="Add issue" onClose={onClose}>
-      <label className="field">
-        <span>Issue number</span>
-        <input value={issueNumber} onChange={(e) => setIssueNumber(e.target.value)} autoFocus />
-      </label>
-      <label className="field">
-        <span>Title (optional)</span>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} />
-      </label>
-      {error && <div className="auth-error">{error}</div>}
-      <div className="modal-actions">
-        <button className="btn-secondary" onClick={onClose}>
-          Cancel
-        </button>
-        <button className="btn-primary" disabled={busy || !issueNumber.trim()} onClick={handleSubmit}>
-          Add
-        </button>
-      </div>
-    </Modal>
   );
 }

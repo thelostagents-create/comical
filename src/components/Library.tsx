@@ -216,6 +216,7 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
         publisher: volume.publisher,
         description: volume.description,
         cover_url: volume.imageUrl,
+        start_year: volume.startYear,
         created_by: profile.id,
       });
       const characterCache = new Map<string, string>(); // comicvineId -> character id
@@ -312,7 +313,10 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
                 )}
                 <div className="meta">
                   <h3>{s.title}</h3>
-                  <div className="sub">{s.publisher || "—"}</div>
+                  <div className="sub">
+                    {s.publisher || "—"}
+                    {s.start_year ? ` · ${s.start_year}` : ""}
+                  </div>
                 </div>
               </div>
             ))}
@@ -402,7 +406,10 @@ function AddSeriesModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             )}
             <div className="meta">
               <h3>{chosen.title}</h3>
-              <div className="sub">{chosen.publisher || "—"}</div>
+              <div className="sub">
+                {chosen.publisher || "—"}
+                {chosen.start_year ? ` · ${chosen.start_year}` : ""}
+              </div>
             </div>
           </div>
           {cvWarning && (

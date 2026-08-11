@@ -22,6 +22,12 @@ import ImageField from "./ImageField";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
 
+const HISTORY_PAGE_SIZE = 100;
+// Each page is a cheap indexed query regardless of how much history exists,
+// but the payload/DOM cost per page adds up — 500 is comfortably past what
+// anyone will realistically page through, without inviting an unbounded scroll.
+const HISTORY_HARD_CAP = 500;
+
 export default function Journal({
   onBack,
   onOpenSeries,
@@ -42,11 +48,26 @@ export default function Journal({
   const [runsPage, setRunsPage] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [readHistory, setReadHistory] = useState<ReadHistoryEntry[] | null>(null);
+  const [historyExhausted, setHistoryExhausted] = useState(false);
+  const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
 
   async function toggleHistory() {
     if (!profile) return;
     setShowHistory((prev) => !prev);
-    if (readHistory === null) setReadHistory(await fetchReadHistory(profile.id));
+    if (readHistory === null) {
+      const page = await fetchReadHistory(profile.id, HISTORY_PAGE_SIZE, 0);
+      setReadHistory(page);
+      setHistoryExhausted(page.length < HISTORY_PAGE_SIZE);
+    }
+  }
+
+  async function loadMoreHistory() {
+    if (!profile || readHistory === null) return;
+    setLoadingMoreHistory(true);
+    const page = await fetchReadHistory(profile.id, HISTORY_PAGE_SIZE, readHistory.length);
+    setReadHistory((prev) => [...(prev ?? []), ...page]);
+    setHistoryExhausted(page.length < HISTORY_PAGE_SIZE);
+    setLoadingMoreHistory(false);
   }
 
   useEffect(() => {
@@ -203,9 +224,6 @@ export default function Journal({
           {readHistory !== null && readHistory.length === 0 && (
             <div className="empty">Nothing here yet — mark an issue read to see it show up here.</div>
           )}
-          {readHistory !== null && readHistory.length === 100 && (
-            <div className="sub" style={{ margin: "0 0 8px" }}>Showing your 100 most recently read issues.</div>
-          )}
           {readHistory &&
             groupReadHistory(readHistory).map((entry) => (
               <div className="card series-row" key={entry.id} onClick={() => onOpenSeries(entry.series.id)}>
@@ -222,6 +240,21 @@ export default function Journal({
                 </div>
               </div>
             ))}
+          {readHistory !== null && readHistory.length > 0 && !historyExhausted && readHistory.length < HISTORY_HARD_CAP && (
+            <button
+              className="btn-secondary"
+              style={{ width: "100%", marginTop: 4 }}
+              disabled={loadingMoreHistory}
+              onClick={loadMoreHistory}
+            >
+              {loadingMoreHistory ? "Loading…" : `Show ${HISTORY_PAGE_SIZE} more`}
+            </button>
+          )}
+          {readHistory !== null && readHistory.length >= HISTORY_HARD_CAP && (
+            <div className="sub" style={{ margin: "8px 0 0" }}>
+              Showing your {HISTORY_HARD_CAP} most recently read issues.
+            </div>
+          )}
         </>
       )}
 

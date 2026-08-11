@@ -22,6 +22,7 @@ export interface Series {
   publisher: string;
   description: string;
   cover_url: string | null;
+  start_year: string | null;
   created_by: string | null;
   created_at: string;
 }

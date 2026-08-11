@@ -19,7 +19,6 @@ import {
   removeFavoriteCharacter,
   removeFavoriteSeries,
   searchCharacters,
-  searchSeries,
   unfollow,
   updateProfile,
   type FavoriteCharacterRow,
@@ -574,16 +573,22 @@ function AddFavoriteSeriesModal({
 }) {
   const { profile } = useAuth();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Series[]>([]);
+  const [library, setLibrary] = useState<LibraryRow[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(async () => setResults(await searchSeries(query)), 200);
-    return () => clearTimeout(t);
-  }, [query]);
+    if (!profile) return;
+    fetchLibrary(profile.id).then(setLibrary);
+  }, [profile]);
 
-  const availableResults = results.filter((s) => !existingIds.has(s.id));
+  // Favorites are meant to spotlight comics you've actually added, not the
+  // whole shared catalog — so this only searches your own library.
+  const q = query.trim().toLowerCase();
+  const availableResults = (library ?? [])
+    .map((row) => row.series)
+    .filter((s) => !existingIds.has(s.id))
+    .filter((s) => !q || s.title.toLowerCase().includes(q) || s.publisher.toLowerCase().includes(q));
 
   async function handleAdd(series: Series) {
     if (!profile || busy) return;
@@ -601,7 +606,7 @@ function AddFavoriteSeriesModal({
   return (
     <Modal title="Add a favorite comic" onClose={onClose}>
       <label className="field">
-        <span>Search your catalog</span>
+        <span>Search from your added comics</span>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -626,8 +631,10 @@ function AddFavoriteSeriesModal({
           ))}
         </div>
       )}
-      {query.trim() && availableResults.length === 0 && (
-        <div className="empty">Not yet imported to our catalog.</div>
+      {library !== null && availableResults.length === 0 && (
+        <div className="empty">
+          {q ? "No matches in your added comics." : "Add some comics to your library first — favorites are pulled from there."}
+        </div>
       )}
       {error && <div className="auth-error">{error}</div>}
       <div className="modal-actions">

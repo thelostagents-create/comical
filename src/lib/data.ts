@@ -70,6 +70,7 @@ export async function createSeries(input: {
   publisher: string;
   description: string;
   cover_url: string | null;
+  start_year: string | null;
   created_by: string;
 }): Promise<Series> {
   const { data, error } = await db().from("series").insert(input).select().single();
@@ -512,17 +513,19 @@ export interface ReadHistoryEntry {
   series: Series;
 }
 
-// Your own reading history, most-recently-read first. Capped so a heavy
-// reader's history doesn't turn into an unbounded fetch every time Journal
-// loads — this is a scroll-through history, not something that needs to
-// show literally every issue you've ever read at once.
-export async function fetchReadHistory(userId: string, limit = 100): Promise<ReadHistoryEntry[]> {
+// Your own reading history, most-recently-read first, one page at a time —
+// nothing is fetched until Journal's history section is expanded, and each
+// subsequent page is only fetched when the user explicitly asks to see
+// more, so this never turns into a single unbounded fetch for a heavy
+// reader. The caller (Journal) also stops offering further pages past a
+// hard cap.
+export async function fetchReadHistory(userId: string, limit = 100, offset = 0): Promise<ReadHistoryEntry[]> {
   const { data, error } = await db()
     .from("reads")
     .select("id, read_at, issues(*, series(*))")
     .eq("user_id", userId)
     .order("read_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (error) throw error;
   return ((data ?? []) as unknown as { id: string; read_at: string; issues: Issue & { series: Series } }[])
     .filter((r) => r.issues && r.issues.series)

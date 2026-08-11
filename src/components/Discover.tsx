@@ -86,7 +86,10 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
                 )}
                 <h3>{s.title}</h3>
                 <div className="tile-meta">
-                  <span>{s.publisher || "—"}</span>
+                  <span>
+                    {s.publisher || "—"}
+                    {s.start_year ? ` · ${s.start_year}` : ""}
+                  </span>
                 </div>
               </div>
             ))}
@@ -167,7 +170,8 @@ export default function Discover({ onOpenSeries }: { onOpenSeries: (seriesId: st
               <div className="meta">
                 <h3>{s.title}</h3>
                 <div className="sub">
-                  {s.publisher || "—"} · {issueCount} {issueCount === 1 ? "issue" : "issues"}
+                  {s.publisher || "—"}
+                  {s.start_year ? ` · ${s.start_year}` : ""} · {issueCount} {issueCount === 1 ? "issue" : "issues"}
                 </div>
               </div>
             </div>
