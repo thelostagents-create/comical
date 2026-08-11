@@ -15,7 +15,7 @@ import {
 import { getCharacterImageOverride } from "../lib/characterImagePrefs";
 import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
 import { timeAgo } from "../lib/format";
-import type { Character } from "../types";
+import type { Character, Series } from "../types";
 import EditCharacterImageModal from "./EditCharacterImageModal";
 import { Icon } from "./Icons";
 import ImageField from "./ImageField";
@@ -206,21 +206,22 @@ export default function Journal({
           {readHistory !== null && readHistory.length === 100 && (
             <div className="sub" style={{ margin: "0 0 8px" }}>Showing your 100 most recently read issues.</div>
           )}
-          {readHistory?.map((entry) => (
-            <div className="card series-row" key={entry.id} onClick={() => onOpenSeries(entry.series.id)}>
-              {entry.series.cover_url ? (
-                <img className="cover" src={entry.series.cover_url} alt="" loading="lazy" />
-              ) : (
-                <div className="cover">{entry.series.title.slice(0, 2).toUpperCase()}</div>
-              )}
-              <div className="meta">
-                <h3>{entry.series.title}</h3>
-                <div className="sub">
-                  {entry.issue.title || `Issue ${entry.issue.issue_number}`} · {timeAgo(entry.readAt)}
+          {readHistory &&
+            groupReadHistory(readHistory).map((entry) => (
+              <div className="card series-row" key={entry.id} onClick={() => onOpenSeries(entry.series.id)}>
+                {entry.series.cover_url ? (
+                  <img className="cover" src={entry.series.cover_url} alt="" loading="lazy" />
+                ) : (
+                  <div className="cover">{entry.series.title.slice(0, 2).toUpperCase()}</div>
+                )}
+                <div className="meta">
+                  <h3>{entry.series.title}</h3>
+                  <div className="sub">
+                    {entry.issueLabel} · {timeAgo(entry.readAt)}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </>
       )}
 
@@ -300,6 +301,45 @@ export default function Journal({
       )}
     </div>
   );
+}
+
+interface GroupedReadHistoryEntry {
+  id: string;
+  series: Series;
+  readAt: string;
+  issueLabel: string;
+}
+
+// Collapse a run of consecutive same-series reads (e.g. a binge through
+// issues 1-5 in one sitting) into a single "Issues 1-5" row dated to the
+// most recent read in that run, instead of one row per issue.
+function groupReadHistory(entries: { id: string; readAt: string; issue: { issue_number: string }; series: Series }[]): GroupedReadHistoryEntry[] {
+  const groups: { id: string; series: Series; readAt: string; issueNumbers: string[] }[] = [];
+  for (const entry of entries) {
+    const last = groups[groups.length - 1];
+    if (last && last.series.id === entry.series.id) {
+      last.issueNumbers.push(entry.issue.issue_number);
+    } else {
+      groups.push({ id: entry.id, series: entry.series, readAt: entry.readAt, issueNumbers: [entry.issue.issue_number] });
+    }
+  }
+  return groups.map((g) => ({
+    id: g.id,
+    series: g.series,
+    readAt: g.readAt,
+    issueLabel: formatIssueLabel(g.issueNumbers),
+  }));
+}
+
+function formatIssueLabel(numbers: string[]): string {
+  if (numbers.length === 1) return `Issue ${numbers[0]}`;
+  const parsed = numbers.map((n) => Number(n));
+  if (parsed.every((n) => Number.isFinite(n))) {
+    const min = Math.min(...parsed);
+    const max = Math.max(...parsed);
+    return min === max ? `Issue ${min}` : `Issues ${min}-${max}`;
+  }
+  return `Issues ${numbers.join(", ")}`;
 }
 
 function CoverModal({
