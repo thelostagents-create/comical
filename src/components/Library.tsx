@@ -95,21 +95,23 @@ export default function Library({
         </div>
         {visible.map((row) => (
           <div className="cover-tile" key={row.id} onClick={() => onOpenSeries(row.series_id)}>
-            {row.status === "completed" && (
-              <div className="stamp" aria-label="Read">
-                <Icon name="check" size={11} />
-              </div>
-            )}
-            {row.starred && (
-              <div className="pinned-star" aria-label="Starred">
-                <Icon name="star" size={11} />
-              </div>
-            )}
-            {row.series.cover_url ? (
-              <img className="cover" src={row.series.cover_url} alt="" loading="lazy" />
-            ) : (
-              <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
-            )}
+            <div className="cover-wrap">
+              {row.series.cover_url ? (
+                <img className="cover" src={row.series.cover_url} alt="" loading="lazy" />
+              ) : (
+                <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
+              )}
+              {row.status === "completed" && (
+                <div className="stamp" aria-label="Read">
+                  <Icon name="check" size={11} />
+                </div>
+              )}
+              {row.starred && (
+                <div className="pinned-star" aria-label="Starred">
+                  <Icon name="star" size={11} />
+                </div>
+              )}
+            </div>
             <h3>{row.series.title}</h3>
             <div className="tile-meta">
               <span>

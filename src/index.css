@@ -419,6 +419,10 @@ h3 {
   min-width: 0;
 }
 
+.cover-wrap {
+  position: relative;
+}
+
 .cover-tile .cover {
   width: 100%;
   height: auto;
@@ -882,8 +886,8 @@ h3 {
 
 .stamp {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  bottom: 6px;
+  right: 6px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
