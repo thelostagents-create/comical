@@ -505,6 +505,30 @@ export async function profileStats(userId: string) {
   return { seriesCount: seriesCount ?? 0, readCount: readCount ?? 0 };
 }
 
+export interface ReadHistoryEntry {
+  id: string;
+  readAt: string;
+  issue: Issue;
+  series: Series;
+}
+
+// Your own reading history, most-recently-read first. Capped so a heavy
+// reader's history doesn't turn into an unbounded fetch every time Journal
+// loads — this is a scroll-through history, not something that needs to
+// show literally every issue you've ever read at once.
+export async function fetchReadHistory(userId: string, limit = 100): Promise<ReadHistoryEntry[]> {
+  const { data, error } = await db()
+    .from("reads")
+    .select("id, read_at, issues(*, series(*))")
+    .eq("user_id", userId)
+    .order("read_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return ((data ?? []) as unknown as { id: string; read_at: string; issues: Issue & { series: Series } }[])
+    .filter((r) => r.issues && r.issues.series)
+    .map((r) => ({ id: r.id, readAt: r.read_at, issue: r.issues, series: r.issues.series }));
+}
+
 // ---------------------------------------------------------------------------
 // feed (activity from people you follow)
 // ---------------------------------------------------------------------------

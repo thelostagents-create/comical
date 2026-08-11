@@ -6,9 +6,11 @@ import {
   fetchLibrary,
   fetchMyBlurbs,
   fetchReadCharacterAppearances,
+  fetchReadHistory,
   profileStats,
   type Blurb,
   type LibraryRow,
+  type ReadHistoryEntry,
 } from "../lib/data";
 import { getCharacterImageOverride } from "../lib/characterImagePrefs";
 import { getJournalCover, setJournalCover } from "../lib/journalPrefs";
@@ -38,6 +40,14 @@ export default function Journal({
   const [openCharacter, setOpenCharacter] = useState<Character | null>(null);
   const [characterRuns, setCharacterRuns] = useState<LibraryRow[] | null>(null);
   const [runsPage, setRunsPage] = useState(0);
+  const [showHistory, setShowHistory] = useState(false);
+  const [readHistory, setReadHistory] = useState<ReadHistoryEntry[] | null>(null);
+
+  async function toggleHistory() {
+    if (!profile) return;
+    setShowHistory((prev) => !prev);
+    if (readHistory === null) setReadHistory(await fetchReadHistory(profile.id));
+  }
 
   useEffect(() => {
     if (!profile) return;
@@ -180,6 +190,39 @@ export default function Journal({
             <div className="when">{timeAgo(b.at)}</div>
           </div>
         ))}
+
+      <div className="section-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span>everything you've read</span>
+        <button className="btn-link" onClick={toggleHistory}>
+          {showHistory ? "Hide" : "Show"}
+        </button>
+      </div>
+      {showHistory && (
+        <>
+          {readHistory === null && <div className="empty">Loading…</div>}
+          {readHistory !== null && readHistory.length === 0 && (
+            <div className="empty">Nothing here yet — mark an issue read to see it show up here.</div>
+          )}
+          {readHistory !== null && readHistory.length === 100 && (
+            <div className="sub" style={{ margin: "0 0 8px" }}>Showing your 100 most recently read issues.</div>
+          )}
+          {readHistory?.map((entry) => (
+            <div className="card series-row" key={entry.id} onClick={() => onOpenSeries(entry.series.id)}>
+              {entry.series.cover_url ? (
+                <img className="cover" src={entry.series.cover_url} alt="" loading="lazy" />
+              ) : (
+                <div className="cover">{entry.series.title.slice(0, 2).toUpperCase()}</div>
+              )}
+              <div className="meta">
+                <h3>{entry.series.title}</h3>
+                <div className="sub">
+                  {entry.issue.title || `Issue ${entry.issue.issue_number}`} · {timeAgo(entry.readAt)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
 
       {showCoverModal && (
         <CoverModal

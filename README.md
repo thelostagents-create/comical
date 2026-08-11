@@ -50,7 +50,11 @@ readers to see their activity — a Goodreads-style tracker for comics.
   read — a character only shows up if Comic Vine actually lists them in
   something you've read, no guessing from series titles. Tap one to see
   every comic run you've read featuring them, 3 at a time with up/down
-  buttons to page through the rest.
+  buttons to page through the rest. An "everything you've read" section at
+  the bottom lists every issue you've marked read, most-recent first —
+  collapsed by default and only fetched when you tap "Show", and capped at
+  your 100 most-recently-read issues, so it costs nothing on a normal
+  Journal visit and never turns into an unbounded fetch for a heavy reader.
 - **Fandom** — a tweet-style feed: post short updates with `#hashtags`,
   react to any post with 👍 ❤️ 😂 😮 😢, reply to a post (replies are
   collapsible), and search hashtags to jump straight to everything posted
