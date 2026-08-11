@@ -89,7 +89,7 @@ export default function Fandom() {
       setBody("");
       await reload();
     } catch {
-      setPostError("Your account isn't able to post right now.");
+      setPostError("Couldn't post that — you might be posting too fast, or your account can't post right now.");
     } finally {
       setPosting(false);
     }
@@ -158,7 +158,10 @@ export default function Fandom() {
       setReplyDrafts((prev) => ({ ...prev, [postId]: "" }));
       setPosts((prev) => prev?.map((p) => (p.id === postId ? { ...p, replyCount: p.replyCount + 1 } : p)) ?? null);
     } catch {
-      setReplyErrors((prev) => ({ ...prev, [postId]: "Your account isn't able to reply right now." }));
+      setReplyErrors((prev) => ({
+        ...prev,
+        [postId]: "Couldn't reply — you might be replying too fast, or your account can't post right now.",
+      }));
     } finally {
       setPostingReplyFor(null);
     }

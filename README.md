@@ -60,6 +60,10 @@ readers to see their activity — a Goodreads-style tracker for comics.
   before they're allowed to save; blocked text shows an inline error
   instead of silently posting. Client-side only, so treat it as a
   deterrent for genuine users rather than abuse-proof moderation.
+- **Anti-spam rate limit** — capped at 5 Fandom posts and 5 replies per
+  rolling 60 seconds, per person. Unlike the content filter, this is
+  enforced in the database (a restrictive RLS policy), not just the
+  client, so it can't be bypassed by calling the API directly.
 - **Notifications** — a bell icon in the top bar with an unread badge.
   You're notified when someone reacts to or replies to your Fandom post, or
   follows you (never for your own actions on your own stuff). Tap the bell
@@ -187,7 +191,10 @@ This app requires a Supabase project — there's no local/offline mode.
    `supabase/migrations/0011_admin_moderation.sql` (adds `is_admin`,
    `is_muted`, `is_banned` to `profiles`, lets admins delete any Fandom
    post/reply, and blocks muted/banned users from posting), then
-   `supabase/migrations/0012_nickname.sql` (adds `nickname` to `profiles`).
+   `supabase/migrations/0012_nickname.sql` (adds `nickname` to `profiles`),
+   then `supabase/migrations/0013_fandom_rate_limit.sql` (adds a
+   restrictive insert policy capping Fandom posts/replies at 5 per
+   rolling 60 seconds, per person).
 3. **To use the admin panel**, make yourself an admin once via the SQL
    editor (there's no in-app way to grant the first admin):
    ```sql
