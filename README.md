@@ -95,10 +95,12 @@ readers to see their activity — a Goodreads-style tracker for comics.
 - **Social** — find and follow other readers from the Feed tab, browse
   their stats, and see what people you follow are reading and rating. A
   series page shows just the reader count, not who they are.
-- **Admin moderation** — a shield icon in the top bar (visible only to
-  admins) opens a panel to delete any Fandom post and mute (blocks
-  posting/replying) or ban (blocks using the app) any user. There's no
-  in-app way to grant the first admin — see the migration notes below.
+- **Admin moderation** — admins get a delete button on *any* Fandom post
+  (not just their own), right on the Fandom board itself. A shield icon in
+  the top bar (visible only to admins) opens a separate panel to mute
+  (blocks posting/replying) or ban (blocks using the app) any user — shows
+  9 users at a time, search to find anyone else. There's no in-app way to
+  grant the first admin — see the migration notes below.
 - **Light/dark mode** — toggle from the top bar; dark is near-black, light
   is a warm beige/cream. Defaults to light mode for new visitors.
 - **Custom accent color** — pick your own accent color (presets or a hex

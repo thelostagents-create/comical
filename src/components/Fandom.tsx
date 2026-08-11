@@ -252,7 +252,7 @@ export default function Fandom() {
               <span className="name">@{post.profile.username}</span>
               <span className="when">{timeAgo(post.created_at)}</span>
             </div>
-            {profile?.id === post.user_id && (
+            {(profile?.id === post.user_id || profile?.is_admin) && (
               <button className="icon-btn post-delete" onClick={() => handleDelete(post.id)} aria-label="Delete post">
                 <Icon name="close" size={13} />
               </button>
