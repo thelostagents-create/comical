@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth";
 import {
   addToLibrary,
@@ -32,6 +32,7 @@ const MAX_IMPORTED_ISSUES = 60;
 const MAX_NEW_CHARACTER_IMAGE_FETCHES = 15;
 
 const FILTERS: Array<LibraryStatus | "all"> = ["all", "reading", "plan_to_read", "completed", "dropped"];
+const LIBRARY_PAGE_SIZE = 50;
 
 export default function Library({
   onOpenSeries,
@@ -42,19 +43,48 @@ export default function Library({
 }) {
   const { profile } = useAuth();
   const [rows, setRows] = useState<LibraryRow[] | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [filter, setFilter] = useState<LibraryStatus | "all">("all");
   const [showAdd, setShowAdd] = useState(false);
   const { message, show } = useToast();
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   async function reload() {
     if (!profile) return;
-    setRows(await fetchLibrary(profile.id));
+    const page = await fetchLibrary(profile.id, LIBRARY_PAGE_SIZE, 0);
+    setRows(page);
+    setHasMore(page.length === LIBRARY_PAGE_SIZE);
   }
 
   useEffect(() => {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
+
+  useEffect(() => {
+    if (!profile || rows === null) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, rows, hasMore, loadingMore]);
+
+  async function loadMore() {
+    if (!profile || !hasMore || loadingMore) return;
+    setLoadingMore(true);
+    const page = await fetchLibrary(profile.id, LIBRARY_PAGE_SIZE, rows?.length ?? 0);
+    setRows((prev) => [...(prev ?? []), ...page]);
+    setHasMore(page.length === LIBRARY_PAGE_SIZE);
+    setLoadingMore(false);
+  }
 
   const visible = rows?.filter((r) => filter === "all" || r.status === filter) ?? [];
 
@@ -102,7 +132,7 @@ export default function Library({
                 <div className="cover">{row.series.title.slice(0, 2).toUpperCase()}</div>
               )}
               {row.status === "completed" && (
-                <div className="stamp" aria-label="Read">
+                <div className={`stamp${row.starred ? " stamp-shifted" : ""}`} aria-label="Read">
                   <Icon name="check" size={11} />
                 </div>
               )}
@@ -128,6 +158,12 @@ export default function Library({
           </div>
         ))}
       </div>
+
+      {hasMore && (
+        <div ref={sentinelRef} className="empty" style={{ padding: "10px 0" }}>
+          {loadingMore ? "Loading more…" : ""}
+        </div>
+      )}
 
       <button className="fab" onClick={() => setShowAdd(true)} aria-label="Add series">
         <Icon name="plus" />

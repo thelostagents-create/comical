@@ -22,10 +22,12 @@ import ImageField from "./ImageField";
 import Modal from "./Modal";
 import RatingStars from "./RatingStars";
 
-const HISTORY_PAGE_SIZE = 100;
-// Each page is a cheap indexed query regardless of how much history exists,
-// but the payload/DOM cost per page adds up — 500 is comfortably past what
-// anyone will realistically page through, without inviting an unbounded scroll.
+// Kept small so the first page never causes lag — each page is a cheap
+// indexed query regardless of how much history exists, but the payload/DOM
+// cost per page adds up.
+const HISTORY_PAGE_SIZE = 50;
+// Comfortably past what anyone will realistically page through, without
+// inviting an unbounded scroll.
 const HISTORY_HARD_CAP = 500;
 
 export default function Journal({

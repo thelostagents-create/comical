@@ -16,10 +16,15 @@ readers to see their activity — a Goodreads-style tracker for comics.
   Read / Reading / Completed / Dropped), mark individual issues read/unread,
   see per-series progress, and rate + leave a note right when you add a
   comic. Star a series (from its detail page) to pin it to the top of your
-  library, marked with a small star badge on its tile. "Add a comic" opens
-  showing just the 6 most recently added catalog series — type to search
-  the whole catalog, or search Comic Vine directly to pull in a title that
-  isn't in the catalog yet.
+  library, marked with a small star badge on its tile; a completed series
+  gets a checkmark badge in that same top-right spot, shifting left of the
+  star instead of overlapping it if the series is also starred. Your
+  library itself loads 50 series at a time (most recently added first),
+  fetching another 50 as you scroll near the bottom, so it stays fast no
+  matter how large your library gets. "Add a comic" opens showing just the
+  6 most recently added catalog series — type to search the whole catalog,
+  or search Comic Vine directly to pull in a title that isn't in the
+  catalog yet.
 - **Ratings & reviews** — 1-5 star ratings with an optional written review,
   on series or individual issues.
 - **Discover** — browse the catalog across two categories: Comics and
@@ -58,7 +63,7 @@ readers to see their activity — a Goodreads-style tracker for comics.
   the bottom lists every issue you've marked read, most-recent first,
   condensing a run of consecutive same-series reads into one "Issues X–Y"
   row dated to the most recent read in that run. Collapsed by default and
-  only fetched when you tap "Show", loaded 100 at a time with a "Show 100
+  only fetched when you tap "Show", loaded 50 at a time with a "Show 50
   more" button up to a hard cap of 500 — so a normal Journal visit costs
   nothing, and even paging all the way through never turns into a single
   unbounded fetch for a heavy reader.

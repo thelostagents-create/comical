@@ -243,13 +243,18 @@ export interface LibraryRow extends LibraryEntry {
   readCount: number;
 }
 
-export async function fetchLibrary(userId: string): Promise<LibraryRow[]> {
-  const { data: entries, error } = await db()
+// limit/offset are optional so callers that need the whole library (e.g.
+// cross-referencing a character's runs) keep getting everything, while the
+// Library page itself can page through 50 at a time.
+export async function fetchLibrary(userId: string, limit?: number, offset = 0): Promise<LibraryRow[]> {
+  let q = db()
     .from("library_entries")
     .select("*, series(*)")
     .eq("user_id", userId)
     .order("starred", { ascending: false })
     .order("added_at", { ascending: false });
+  if (limit !== undefined) q = q.range(offset, offset + limit - 1);
+  const { data: entries, error } = await q;
   if (error) throw error;
   const rows = (entries ?? []) as (LibraryEntry & { series: Series })[];
   if (rows.length === 0) return [];
